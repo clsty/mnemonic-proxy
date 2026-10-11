@@ -58,8 +58,8 @@ Stesso strumento su Linux in locale (5700G, 8 thread): ripristino 89 ms, turno 1
 - `ctxproxy/check.py` r. 85, `ctxproxy/packtok.py` r. 20: `encoding="utf-8"` esplicito.
 - `ctxproxy/demo.py` r. 101: `TemporaryDirectory(ignore_cleanup_errors=True)` (sqlite aperto su Windows).
 - `tests/*.py`: `TemporaryDirectory(ignore_cleanup_errors=True)` (16 file; solo pulizia).
-- `tests/test_compat.py` (nuovo, 124 righe): lock esclusivo tra processi, URI con spazi/`#`/`%`, replace,
-  bad_name, console cp1252 (demo in sottoprocesso con `PYTHONIOENCODING=cp1252`).
+- `tests/test_compat.py` (nuovo, 124 righe): lock esclusivo (due fd, due thread), import di kvarchive senza
+  fcntl, URI con spazi/`#`/`%`, replace, bad_name, stream cp1252.
 - `tools/state_e2e.py` (nuovo): e2e dello stato salvato con llama-server vero, qualunque OS.
 - `examples/start-windows.bat` (nuovo, CRLF, `.gitattributes`): engine + check + proxy; provato in CI.
 - `.github/workflows/ci.yml`: job `test-windows` (3.10, 3.14) e `llama-windows` (zip b11430 sha256
@@ -90,6 +90,6 @@ Comportamento su Linux: invariato (compat su POSIX chiama esattamente le stesse 
 - Il caso guida (RTX 2060 6 GB, 131K, KV Q8, `-np 1`) non è riproducibile qui: nessuna GPU. Per 131K con KV Q8 il
   file di stato cresce in proporzione (≈345 MB per 3.2K token con 0.6B in F16: dipende dal modello).
 - Il lock Windows (`msvcrt.locking` LK_LOCK) da solo riprova ~10 s e poi solleva errore; compat lo ripete finché
-  non lo ottiene, quindi attende senza limite come `flock`. Il test fra processi (`tests/test_compat.py`) passa su
-  Windows CI.
+  non lo ottiene, quindi attende senza limite come `flock`. Il test (`tests/test_compat.py`, due fd sullo stesso
+  file in due thread) passa su Windows CI; un test fra processi distinti non c'è.
 - Un errore unitario locale isolato non riprodotto (vedi sopra).
