@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.2 — unreleased
+## 0.3.2 — 2026-10-11
 
 Runs natively on Windows (no WSL), with saved engine state. Available on PyPI.
 
@@ -13,7 +13,8 @@ Runs natively on Windows (no WSL), with saved engine state. Available on PyPI.
   takes an exclusive lock with `msvcrt.locking` there (`fcntl.flock` elsewhere, unchanged). Atomic renames retry for
   ~2.5 s when Windows reports the destination as busy (an antivirus scan, a reader of `last_request.json`). Files
   opened with `os.open` are binary (`O_BINARY`). The read-only archive of the MCP server is opened with a URI that
-  works with drive letters (`file:///C:/...`). On Windows, manifest names are also refused if they contain `\`, `:`
+  works with drive letters (`file:///C:/...`); a `%` in the path is now escaped on Linux too (a directory name such as `p%2f…` made the
+  read-only open fail). On Windows, manifest names are also refused if they contain `\`, `:`
   or another character Windows does not allow in a file name.
 - **Console output never crashes the proxy.** On a Windows console (cp1252 and similar) characters the console cannot
   show (`—`, `⟪`, `📌`) are printed as escapes (`\u27ea`) instead of raising `UnicodeEncodeError`: `mnemonic-proxy

@@ -81,6 +81,19 @@ class TestSqliteUri(unittest.TestCase):
         if compat.WINDOWS:
             self.skipTest("POSIX form")
         self.assertEqual(compat.sqlite_ro_uri("/x/a?b#c.sqlite"), "file:/x/a%3fb%23c.sqlite?mode=ro")
+        # "%" followed by hex digits must stay literal (mkdtemp's random suffix made this flaky)
+        self.assertEqual(compat.sqlite_ro_uri("/x/a%2fb.sqlite"), "file:/x/a%252fb.sqlite?mode=ro")
+
+    def test_percent_hex_in_path_opens(self):
+        d = tempfile.mkdtemp(prefix="p%2f")
+        p = os.path.join(d, "archive.sqlite")
+        db = sqlite3.connect(p)
+        db.execute("create table t(x)")
+        db.commit()
+        db.close()
+        ro = sqlite3.connect(compat.sqlite_ro_uri(p), uri=True)
+        self.assertEqual(ro.execute("select count(*) from t").fetchall(), [(0,)])
+        ro.close()
 
 
 class TestNames(unittest.TestCase):

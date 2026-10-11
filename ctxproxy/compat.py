@@ -60,7 +60,7 @@ def sqlite_ro_uri(path: str) -> str:
         p = "/" + p.replace("\\", "/")
     if WINDOWS:
         return "file://%s?mode=ro" % p.replace("%", "%25").replace("?", "%3f").replace("#", "%23")
-    return "file:%s?mode=ro" % p.replace("?", "%3f").replace("#", "%23")
+    return "file:%s?mode=ro" % p.replace("%", "%25").replace("?", "%3f").replace("#", "%23")
 
 
 def replace(src: str, dst: str, tries: int = 50) -> None:
