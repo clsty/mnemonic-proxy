@@ -203,7 +203,7 @@ footer b{color:var(--cy)}
 <span class="p">$</span> llama-server -m model.gguf -c 131072 --slot-save-path ./slots --port 8095
 
 <span class="c"># 2. the proxy</span>
-<span class="p">$</span> pip install git+https://github.com/lastreload/mnemonic-proxy
+<span class="p">$</span> pip install mnemonic-proxy                   <span class="c"># or: uvx mnemonic-proxy demo</span>
 <span class="p">$</span> mnemonic-proxy --upstream http://127.0.0.1:8095 --port 8096 --data ./data
 
 <span class="c"># 3. your agent → http://127.0.0.1:8096</span>

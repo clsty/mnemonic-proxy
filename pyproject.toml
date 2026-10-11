@@ -1,27 +1,42 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mnemonic-proxy"
-version = "0.3.1"
+version = "0.3.2"
 description = "Transparent proxy that lets local coding agents work for hours: verbatim archive, structured recall, segments with handoff notes, saved engine state."
-readme = "README.md"
-license = { text = "MIT" }
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Maurizio Verde" }]
 requires-python = ">=3.10"
 dependencies = []   # standard library only (sqlite3 with FTS5); kv_archive needs Python >= 3.14 (compression.zstd)
 keywords = ["llm", "proxy", "context", "coding-agent", "llama.cpp", "openai", "anthropic", "mcp"]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development",
+    "Topic :: Internet :: Proxy Servers",
 ]
 
 [project.urls]
 Homepage = "https://github.com/lastreload/mnemonic-proxy"
 Repository = "https://github.com/lastreload/mnemonic-proxy"
 Documentation = "https://lastreload.github.io/mnemonic-proxy/"
+Changelog = "https://github.com/lastreload/mnemonic-proxy/blob/main/CHANGELOG.md"
+Issues = "https://github.com/lastreload/mnemonic-proxy/issues"
 
 [project.optional-dependencies]
 exact = ["tokenizers>=0.15"]   # exact token counting with a HF tokenizer.json

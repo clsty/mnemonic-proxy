@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.png" alt="Mnemonic Proxy logo" width="120">
+  <img src="https://raw.githubusercontent.com/lastreload/mnemonic-proxy/main/docs/assets/logo.png" alt="Mnemonic Proxy logo" width="120">
 </p>
 
 <h1 align="center">Mnemonic Proxy</h1>
@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/hero.jpg" alt="Mnemonic Proxy" width="100%">
+  <img src="https://raw.githubusercontent.com/lastreload/mnemonic-proxy/main/docs/assets/hero.jpg" alt="Mnemonic Proxy" width="100%">
 </p>
 
 A transparent HTTP proxy that sits between a coding agent and a local model (llama.cpp's `llama-server`,
@@ -36,10 +36,10 @@ A real coding session — a canvas tower-defense game built from scratch by a 35
 RTX 4070 Ti — with the proxy in between.
 
 <p align="center">
-  <img src="docs/assets/replay.gif" alt="Replay: a question answered from three hours earlier via one recall call" width="100%">
+  <img src="https://raw.githubusercontent.com/lastreload/mnemonic-proxy/main/docs/assets/replay.gif" alt="Replay: a question answered from three hours earlier via one recall call" width="100%">
 </p>
 
-<p align="center"><sub>Replay of a real exchange (animated GIF; <a href="docs/assets/replay.mp4">MP4</a>).
+<p align="center"><sub>Replay of a real exchange (animated GIF; <a href="https://raw.githubusercontent.com/lastreload/mnemonic-proxy/main/docs/assets/replay.mp4">MP4</a>).
 Three hours and two segment switches into the session, one <code>recall</code> call — resolved inside the proxy in
 61 ms — brings back the verbatim first version of the boss block, message 20. No model summarized anything.</sub></p>
 
@@ -51,7 +51,7 @@ Three hours and two segment switches into the session, one <code>recall</code> c
 | **1.4 s** | to resume a 110K-token conversation from disk (≈50 s re-reading it) |
 
 <p align="center">
-  <img src="docs/assets/session-chart.svg" alt="Full history vs. prompt actually read, per request" width="100%">
+  <img src="https://raw.githubusercontent.com/lastreload/mnemonic-proxy/main/docs/assets/session-chart.svg" alt="Full history vs. prompt actually read, per request" width="100%">
 </p>
 
 Magenta: the full history of the session. Cyan: what the model actually reads on each request. Dashed lines: the two
@@ -94,7 +94,7 @@ archive). Held-out split:
 
 The benchmark guided development, so read it as a regression suite, not an independent score. Its archives are real
 private sessions and are not in this repository: `bench/` runs against your own archives (`bench/data/<name>.sqlite`)
-with questions written for them. Details: [docs/dev-notes/RECALL-RESULT.md](docs/dev-notes/RECALL-RESULT.md)
+with questions written for them. Details: [docs/dev-notes/RECALL-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/RECALL-RESULT.md)
 (Italian).
 
 ## Saved state, measured
@@ -138,7 +138,7 @@ opt-in with `--slot-save-path`. The Strata numbers on this page were measured on
 Claude Code ran on a test config with low thresholds (window 64K, masking at 36K) so that segments would switch
 within the session. Found live and fixed in 0.3.0: in 3 writes out of 140 the model copied the shortened form of an
 old tool argument into a file (see [What we have not proven](#what-we-have-not-proven)). Report:
-[docs/dev-notes/LIVE020-RESULT.md](docs/dev-notes/LIVE020-RESULT.md) (Italian).
+[docs/dev-notes/LIVE020-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/LIVE020-RESULT.md) (Italian).
 
 ### Long context on Strata, without the proxy
 
@@ -153,8 +153,8 @@ Prefill stays at ~2.5K tok/s up to 122K, VRAM flat at 11.6 GB. Same report, sect
   32768`, `ds4-server --ctx 32768`). Why: at 32K the recall trap of the ds4 runs (an error line removed from the
   prompt, asked for later) was answered right with both ds4 builds; at 8K it passed **once**, after the 0.3.0 recall
   fix, and failed before it. Small windows stay excluded until they are proven on more runs. Reports (Italian):
-  [DS4-QWEN-COMPARE-RESULT.md](docs/dev-notes/DS4-QWEN-COMPARE-RESULT.md),
-  [RECALL-8K-030-RESULT.md](docs/dev-notes/RECALL-8K-030-RESULT.md).
+  [DS4-QWEN-COMPARE-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-QWEN-COMPARE-RESULT.md),
+  [RECALL-8K-030-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/RECALL-8K-030-RESULT.md).
 - Python ≥ 3.10 (`kv_archive`: ≥ 3.14). An OpenAI-compatible engine; saved state needs llama-server with
   `--slot-save-path`, or Strata ≥ 0.1.40 with `--slot-save-path` (see [Engines](#engines)).
 
@@ -164,7 +164,7 @@ Three levels. Each one stands on its own.
 
 | | what you see | needs | time |
 |---|---|---|---|
-| **T0 — see it work** | archive, masking, exact recall, with a scripted fake model | Python ≥ 3.10, git | 1 minute |
+| **T0 — see it work** | archive, masking, exact recall, with a scripted fake model | Python ≥ 3.10 | 1 minute |
 | **T1 — real model on CPU** | a real agent (pi) writing code through the proxy, masking, recall, resume after an engine restart | + cmake, a C++ compiler, Node.js ≥ 22.19, ~9 GB RAM (the engine at `-c 32768`), 3.5 GB disk | ~45 minutes |
 | **T2 — real use (GPU)** | your own model and agent, long sessions | a GPU engine | — |
 
@@ -174,9 +174,12 @@ Commands are for Linux; see [Platforms](#platforms) for macOS and Windows (nativ
 
 ```sh
 python3 -m venv mnemonic-venv && . mnemonic-venv/bin/activate
-pip install git+https://github.com/lastreload/mnemonic-proxy
+pip install mnemonic-proxy
 mnemonic-proxy demo
 ```
+
+With [uv](https://docs.astral.sh/uv/), no venv to create: `uvx mnemonic-proxy demo`. The development version (the
+`main` branch, newer than the last PyPI release): `pip install git+https://github.com/lastreload/mnemonic-proxy`.
 
 The demo starts the real proxy in a temporary folder, in front of a scripted fake model. An agent reads a long
 `build.log` that contains one build id; the session grows until the proxy hides the log; the demo prints what the
@@ -353,9 +356,9 @@ other hardware.
 The proxy recognises the engine at startup and turns off, with a warning, whatever the engine cannot do
 (`--engine auto|strata|llama.cpp|ds4|openai` forces it). `ctxproxy` is kept as an alias of `mnemonic-proxy`.
 Optional: `--tokenizer` (a Hugging Face `tokenizer.json`, or a Strata pack `tokenizer/` folder; needs
-`pip install 'mnemonic-proxy[exact] @ git+https://github.com/lastreload/mnemonic-proxy'`) for exact token counts
+`pip install 'mnemonic-proxy[exact]'`) for exact token counts
 instead of a chars/3.5 estimate; with llama-server, `"engine_tokenize": true` counts through its `/tokenize`. A
-systemd user unit is in [examples/mnemonic-proxy.service](examples/mnemonic-proxy.service).
+systemd user unit is in [examples/mnemonic-proxy.service](https://github.com/lastreload/mnemonic-proxy/blob/main/examples/mnemonic-proxy.service).
 
 Disable the agent's own auto-compaction in every client below, otherwise two context managers fight over the same
 history.
@@ -530,7 +533,7 @@ Start with `mnemonic-proxy check` (add `--live` to exercise the engine): every f
 
   ```powershell
   py -m venv mnemonic-venv; .\mnemonic-venv\Scripts\Activate.ps1
-  pip install git+https://github.com/lastreload/mnemonic-proxy
+  pip install mnemonic-proxy
   mnemonic-proxy demo
   mkdir slots
   llama-server.exe -m model.gguf -c 32768 --jinja --slot-save-path .\slots --port 8095   # in a second window
@@ -540,7 +543,7 @@ Start with `mnemonic-proxy check` (add `--live` to exercise the engine): every f
 
   `config.llama-server.json` is in `examples\` (`"slot_dir": "./slots"`: relative paths are resolved from the folder
   you start the proxy in, so start the engine and the proxy from the same folder).
-  [`examples\start-windows.bat`](examples/start-windows.bat) does the same in one double-click: it starts
+  [`examples\start-windows.bat`](https://github.com/lastreload/mnemonic-proxy/blob/main/examples/start-windows.bat) does the same in one double-click: it starts
   `llama-server.exe` in its own window with `--slot-save-path .\slots`, waits for it, runs `check`, then the proxy on
   port 8096 (edit the four paths at the top: `LLAMA`, `MODEL`, `CONFIG`, `VENV`). What CI proves on Windows: unit
   tests, demo on a cp1252 console, `check --live` READY, chat through the proxy, `start-windows.bat`, autosave and
@@ -625,7 +628,7 @@ mnemonic-proxy is a separate tool, compatible with ds4-server and tested with it
 
 **Measured with pi** (4 tasks in one session on a 140-line `server.log`; the last one asks, without re-running
 anything, for the request id and shard of the *third* error, whose output the proxy had already removed from the
-prompt). AI395: Ryzen AI Max+ 395 "Strix Halo", 128 GB unified memory, ROCm gfx1151.
+prompt). Hardware: Ryzen AI Max+ 395 "Strix Halo", 128 GB unified memory, ROCm gfx1151.
 
 | model, engine | window | tasks 1–3 | third error (rq-2290, shard 3) | `recall` | time |
 |---|---|---|---|---|---|
@@ -646,12 +649,12 @@ The 8K rows were measured to stress recall; since 0.3.0 the proxy refuses window
 - Qwen3.8 runs on a local ROCm port of ds4's Qwen path (not the ds4 release, which supports Qwen3.8 on Metal/CUDA
   only); prompt reading ~81 tok/s and generation 16–19 tok/s at 1.6K–7.8K tokens without MTP.
 
-Reports (Italian): [DS4-GLM-RESULT.md](docs/dev-notes/DS4-GLM-RESULT.md),
-[DS4-QWEN-COMPARE-RESULT.md](docs/dev-notes/DS4-QWEN-COMPARE-RESULT.md) (also Qwen3.8 quality on ds4 vs Strata),
-[RECALL-8K-030-RESULT.md](docs/dev-notes/RECALL-8K-030-RESULT.md) (the 0.3.0 run),
-[DS4-RESULT.md](docs/dev-notes/DS4-RESULT.md) (the adapter).
+Reports (Italian): [DS4-GLM-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-GLM-RESULT.md),
+[DS4-QWEN-COMPARE-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-QWEN-COMPARE-RESULT.md) (also Qwen3.8 quality on ds4 vs Strata),
+[RECALL-8K-030-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/RECALL-8K-030-RESULT.md) (the 0.3.0 run),
+[DS4-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-RESULT.md) (the adapter).
 
-`GET /v1/strata/engine` shows what was detected. Measurements: [docs/dev-notes/ENGINES-RESULT.md](docs/dev-notes/ENGINES-RESULT.md) (Italian).
+`GET /v1/strata/engine` shows what was detected. Measurements: [docs/dev-notes/ENGINES-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/ENGINES-RESULT.md) (Italian).
 
 ## Configuration
 
@@ -785,7 +788,7 @@ first request; the proxy recognizes its own markers in both languages in every c
 
 ## Credits & license
 
-MIT — see [LICENSE](LICENSE). Built by Maurizio Verde — LastReload.
+MIT — see [LICENSE](https://github.com/lastreload/mnemonic-proxy/blob/main/LICENSE). Built by Maurizio Verde — LastReload.
 
 Thanks to Niko1221 and the [Strata](https://github.com/Niko1221/Strata) contributors for the inference engine that
 made our large-model measurements possible on a single 12 GB GPU; to the [llama.cpp](https://github.com/ggml-org/llama.cpp)

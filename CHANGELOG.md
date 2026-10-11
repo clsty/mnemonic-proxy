@@ -2,9 +2,13 @@
 
 ## 0.3.2 — unreleased
 
-Runs natively on Windows (no WSL), with saved engine state. (Version number in `pyproject.toml` still 0.3.1: the
-release bump comes with the PyPI packaging.)
+Runs natively on Windows (no WSL), with saved engine state. Available on PyPI.
 
+- **Available on PyPI**: `pip install mnemonic-proxy`, or `uvx mnemonic-proxy demo` with uv
+  (`pip install git+https://github.com/lastreload/mnemonic-proxy` still installs the development version). Releases
+  are published by `.github/workflows/publish.yml` with PyPI Trusted Publishing (no token in the repository). Package
+  metadata completed (Python 3.10–3.14, Linux and Windows classifiers, SPDX license); README images and links are
+  absolute URLs so they render on the PyPI page.
 - **Windows without WSL.** The `kv_archive` lock used `fcntl`, which does not exist on Windows: `ctxproxy/compat.py`
   takes an exclusive lock with `msvcrt.locking` there (`fcntl.flock` elsewhere, unchanged). Atomic renames retry for
   ~2.5 s when Windows reports the destination as busy (an antivirus scan, a reader of `last_request.json`). Files
