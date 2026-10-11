@@ -539,9 +539,13 @@ Start with `mnemonic-proxy check` (add `--live` to exercise the engine): every f
   ```
 
   `config.llama-server.json` is in `examples\` (`"slot_dir": "./slots"`: relative paths are resolved from the folder
-  you start the proxy in, so start the engine and the proxy from the same folder). What CI proves on Windows: unit
-  tests, demo on a cp1252 console, `check --live` READY, chat through the proxy, autosave and autorestore after an
-  engine restart (3.2K tokens restored in 95 ms; the turn takes 2.3 s instead of 35.7 s), `kv_archive` round trip.
+  you start the proxy in, so start the engine and the proxy from the same folder).
+  [`examples\start-windows.bat`](examples/start-windows.bat) does the same in one double-click: it starts
+  `llama-server.exe` in its own window with `--slot-save-path .\slots`, waits for it, runs `check`, then the proxy on
+  port 8096 (edit the four paths at the top: `LLAMA`, `MODEL`, `CONFIG`, `VENV`). What CI proves on Windows: unit
+  tests, demo on a cp1252 console, `check --live` READY, chat through the proxy, `start-windows.bat`, autosave and
+  autorestore after an engine restart (3.2K tokens restored in 95 ms; the turn takes 2.3 s instead of 35.7 s),
+  `kv_archive` round trip.
   Not tested: real agents (pi, Claude Code, Codex) on Windows, GPU builds, the dashboard. `sha256sum` is
   `Get-FileHash -Algorithm SHA256`.
 - **Windows, WSL 2**: follow the Linux commands inside WSL. Keep the engine, the proxy and the `slots` folder all

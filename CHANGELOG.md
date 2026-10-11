@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.3.2 — 2026-10-11
+## 0.3.2 — unreleased
 
-Runs natively on Windows (no WSL), with saved engine state.
+Runs natively on Windows (no WSL), with saved engine state. (Version number in `pyproject.toml` still 0.3.1: the
+release bump comes with the PyPI packaging.)
 
 - **Windows without WSL.** The `kv_archive` lock used `fcntl`, which does not exist on Windows: `ctxproxy/compat.py`
   takes an exclusive lock with `msvcrt.locking` there (`fcntl.flock` elsewhere, unchanged). Atomic renames retry for
@@ -17,7 +18,8 @@ Runs natively on Windows (no WSL), with saved engine state.
   closed) instead of ending up as a proxy error.
 - **CI on `windows-latest`**: unit tests (Python 3.10 and 3.14), `mnemonic-proxy demo` with a cp1252 console,
   `check` against the fake engine; on demand, the official llama.cpp `b11430` Windows CPU build (`llama-server.exe`,
-  zip checksum verified) with Qwen3-0.6B: `check --live` READY, chat round trip, and `tools/state_e2e.py`.
+  zip checksum verified) with Qwen3-0.6B: `check --live` READY, chat round trip, `examples\start-windows.bat`
+  (engine + check + proxy in one file), and `tools/state_e2e.py`.
 - **`tools/state_e2e.py`** (any OS): conversation through the proxy, autosave in `slot_dir`, engine restart,
   autorestore from disk, then the same turn with the state file hidden as the re-read baseline; with `--kv-archive`
   the state file is archived, deleted, rebuilt and restored by the engine. Windows CI, 3.2K tokens: restore 95 ms,

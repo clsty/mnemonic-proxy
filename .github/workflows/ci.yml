@@ -244,6 +244,23 @@ jobs:
         run: |
           python tools\state_e2e.py --server $env:LLAMA_SERVER --model models\model.gguf --work e2e --kv-archive
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: examples\start-windows.bat (engine + check + proxy, as a user would start them)
+        if: success() || failure()
+        run: |
+          $env:LLAMA = $env:LLAMA_SERVER
+          $env:MODEL = "$env:GITHUB_WORKSPACE\models\model.gguf"
+          $env:VENV = "$env:RUNNER_TEMP\mvenv"
+          python -m venv $env:VENV
+          & "$env:VENV\Scripts\pip.exe" install --quiet .
+          $b = Start-Process -FilePath cmd.exe -ArgumentList "/c","examples\start-windows.bat" -RedirectStandardOutput bat.log -RedirectStandardError bat.err.log -PassThru
+          $ok = $false
+          foreach ($i in 1..120) { try { Invoke-RestMethod http://127.0.0.1:8096/health | Out-Null; $ok = $true; break } catch { Start-Sleep 1 } }
+          Get-Content bat.log, bat.err.log -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "the proxy started by start-windows.bat does not answer on 8096" }
+          $body = '{"model": "m", "max_tokens": 16, "messages": [{"role": "user", "content": "Say hi. /no_think"}]}'
+          Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8096/v1/chat/completions -ContentType 'application/json' -Body $body | ConvertTo-Json -Depth 6
+          if (-not (Test-Path examples\slots) -or -not (Test-Path examples\data\journal.jsonl)) { throw "slots or data not created next to the .bat" }
+          Get-Process mnemonic-proxy, llama-server -ErrorAction SilentlyContinue | Stop-Process
       - name: logs
         if: always()
         run: |
