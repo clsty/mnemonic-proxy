@@ -1,95 +1,82 @@
-# RESULT — mnemonic-proxy 0.3.2: Windows nativo (card t_76051d7d)
+# RESULT — mnemonic-proxy 0.3.2 su PyPI (card t_a7ee3301)
 
-Branch `feature/windows` su `origin` (maverde73/virtual-context-proxy), base `release/0.3.1` (d50b273).
-Ultimo commit verificato: `c3d9640`. Niente push su `lastreload`, niente tag o release.
+Branch `feature/pypi` su `origin` (maverde73/virtual-context-proxy), worktree `~/src/vcp-wt/pypi`, base
+`feature/windows` (0503591) + merge di `lastreload/main` (PR #2, finestra di contesto da Strata: senza, il merge su
+lastreload/main non sarebbe stato fast-forward). Niente push su `lastreload`, niente tag, release o upload.
+Il report della card Windows (t_76051d7d) è in `~/src/vcp-wt/windows/RESULT.md` e nella storia git.
 
-## Esito
+Nome `mnemonic-proxy` su PyPI ricontrollato all'inizio: `https://pypi.org/pypi/mnemonic-proxy/json` → 404 (libero;
+pending publisher già registrato da Maurizio).
 
-Funziona su Windows nativo (runner `windows-latest`, CPU), davanti a `llama-server.exe` ufficiale b11430 con
-`--slot-save-path .\slots`. Ultimo run completo, 6 job verdi su 6:
-https://github.com/maverde73/virtual-context-proxy/actions/runs/38140673008
+## File cambiati (rispetto a feature/windows)
 
-| job | esito |
+- `pyproject.toml`: versione 0.3.2; `license = "MIT"` (SPDX) + `license-files`; `readme` con content-type
+  markdown; classifiers: Development Status 4 Beta, Environment Console, Intended Audience Developers,
+  POSIX Linux, **Microsoft Windows** (CI Windows verde in t_76051d7d e qui), Python 3.10/3.11/3.12/3.13/3.14,
+  Topic AI / Software Development / Proxy Servers; URL Changelog e Issues; `setuptools>=77` (serve per la licenza SPDX).
+  Codice invariato.
+- `ctxproxy/__init__.py`: `__version__ = "0.3.2"` (coincide con pyproject; publish.yml lo verifica contro il tag).
+- `README.md`: immagini → `raw.githubusercontent.com/lastreload/mnemonic-proxy/main/docs/assets/...` (5),
+  link relativi (docs/dev-notes, examples, LICENSE) → `github.com/lastreload/mnemonic-proxy/blob/main/...` (12),
+  verificato che non ne restano di relativi; installazione T0 e Windows: `pip install mnemonic-proxy`, più
+  `uvx mnemonic-proxy demo` e `git+https://...` come versione di sviluppo; `[exact]` senza git; "git" tolto dai
+  prerequisiti di T0; "AI395:" → "Hardware:" (nome host, finiva nel METADATA del wheel).
+- `docs/index.html`: `pip install mnemonic-proxy` (# or: uvx mnemonic-proxy demo).
+- `CHANGELOG.md` 0.3.2: voce "Available on PyPI"; tolta la nota "versione ancora 0.3.1".
+- `.github/workflows/publish.yml` (nuovo): su `release: published`; job `build` (tag == v+versione, build,
+  `twine check --strict`, wheel installato in venv pulito + demo, artifact) → job `pypi` con environment `pypi`,
+  `permissions: id-token: write`, `pypa/gh-action-pypi-publish@release/v1`. Nessun segreto.
+- `.github/workflows/ci.yml`: job `package` (build + twine check + elenco wheel) e `package-install`
+  (ubuntu-24.04 e windows-latest × Python 3.10/3.14: pip install del wheel in venv pulito, `mnemonic-proxy demo`
+  → PASS, `mnemonic-mcp --help`, `uvx --from <wheel> mnemonic-proxy demo` → PASS).
+- `docs/assets/social-preview.png` (nuovo): hero 1344×768 ridimensionato a 1280 di larghezza e ritagliato al
+  centro a 1280×640 (nessun testo/logo nell'immagine, si perdono solo i bordi alto/basso).
+- `PUBLISH-STEPS.md` (nuovo): passi per Maurizio. `RESULT.md`: questo file (sostituisce quello della card Windows).
+- Dal merge di lastreload/main: `ctxproxy/engines.py`, `ctxproxy/fake_engine.py`, `tests/test_engines.py` (PR #2).
+
+## Artefatti (build locale, Python 3.14, `python -m build`)
+
+| file | sha256 |
 |---|---|
-| test (3.10), test (3.14) — Linux | verde |
-| test-windows (3.10), test-windows (3.14) | verde: 245 test, demo con console cp1252, check contro fake engine (32K READY, 8K rifiutato) |
-| llama-cpu — Linux, Qwen3-0.6B | verde, compreso state_e2e |
-| llama-windows — llama-server.exe b11430 CPU + Qwen3-0.6B Q8_0 | verde: check --live READY, round trip chat, state_e2e PASS, start-windows.bat |
+| `mnemonic_proxy-0.3.2-py3-none-any.whl` (161 KB) | `02519e408bb0767019f844a6d545bf6403eac73d72485af3d52c3d7db0a528d2` |
+| `mnemonic_proxy-0.3.2.tar.gz` (242 KB) | `cb0866c03b5b8c3ada8cd41f66a0bd0e13c9b713e70a32ed7a5128abb01a4e13` |
 
-Log del job Windows reale: https://github.com/maverde73/virtual-context-proxy/actions/runs/38140673008/job/114473750002
+(In `~/src/vcp-wt/pypi/dist/`, build del commit f2f791c. Non sono i file che verranno pubblicati: publish.yml
+ricostruisce dal tag; gli hash possono differire per timestamp e per i file .md cambiati dopo.)
+`twine check --strict`: PASSED su entrambi.
 
-Run precedenti (stesso codice, solo doc/CI cambiati dopo):
-- 38140065397 (6238ae2): 6/6 verdi
-- 38139276990 (cefc574): Windows verdi, llama-cpu rosso per "Illegal instruction" (vedi sotto, corretto)
+Contenuto del wheel: `ctxproxy/` (`__init__`, api_anthropic, api_responses, autosave, check, compat, core, demo,
+engines, fake_engine, kvarchive, lang, mcp_server, packtok, paging, recall2, render, server, tooldefs, upstream) +
+`dist-info` (METADATA, WHEEL, entry_points: mnemonic-proxy, ctxproxy, mnemonic-mcp; licenses/LICENSE; RECORD;
+top_level). Niente dev-notes, bench, tools, dashboard, dati.
+sdist: lo stesso + README, LICENSE, pyproject, `tests/` (test unitari, senza dati).
+Grep su wheel e sdist estratti per `mverde`, `/mnt/`, `PC4070TI`, `AI395`, `MVLINNA`, `10.77.`, `/home/`: nessuna
+occorrenza.
 
-Suite Linux in locale (Python 3.14 e 3.10 via uv): 245 test OK (6 saltati), 219 test OK su 3.10 (7 saltati), due
-passate consecutive verdi. Una passata locale ha dato 1 errore che non si è ripresentato in tre passate successive:
-non riprodotto.
+## Installazione dal wheel
 
-## Tempi misurati su Windows (state_e2e, Qwen3-0.6B Q8_0, CPU del runner)
+| piattaforma | Python | pip install wheel | `mnemonic-proxy demo` | `mnemonic-mcp --help` | uvx --from wheel |
+|---|---|---|---|---|---|
+| Linux locale (uv venv pulito) | 3.10.21 | ok (0.3.2) | PASS 0.6 s | ok | — |
+| Linux locale | 3.14.7 | ok (0.3.2) | PASS 0.6 s | ok | PASS |
+| CI ubuntu-24.04 | 3.10 / 3.14 | ok | PASS | ok | PASS |
+| CI windows-latest (console cp1252) | 3.10 / 3.14 | ok | PASS (1.8 s su 3.14) | ok | PASS (2.2 s) |
 
-Conversazione di 3.2K token tramite il proxy → autosave in `slots` → riavvio di llama-server.exe → stesso turno:
+## Test
 
-| run | ripristino (motore) | turno dopo ripristino | stesso turno rileggendo (file nascosto) | token letti dopo ripristino |
-|---|---|---|---|---|
-| 38139276990 | 95 ms | 2.34 s | 35.71 s | 37 su 3174 |
-| 38140065397 | — | — | 29.14 s | 37 su 3174 |
-| 38140673008 | 68 ms | 2.43 s | 36.02 s | 37 su 3174 |
+- Locale: `python -m unittest discover -s tests -t .` → Python 3.14: 246 OK (6 skip); Python 3.10: 220 OK (7 skip).
+- CI su `origin` branch `feature/pypi`, commit f2f791c, workflow_dispatch con llama=true: tutti gli 11 job verdi
+  (test 3.10/3.14, test-windows 3.10/3.14, llama-cpu, llama-windows, package, package-install ×4):
+  https://github.com/maverde73/virtual-context-proxy/actions/runs/38141882299
+  (il run da push 38141868901 è stato annullato dalla concurrency quando è partito il dispatch: stesso commit.)
+  Commit successivi: solo PUBLISH-STEPS.md e RESULT.md (il push fa ripartire la CI: vedi link nel commento card).
+- `publish.yml` non è eseguibile senza release: verificato solo che il YAML è valido (trigger release/published,
+  job build → pypi). Il suo job build ripete gli stessi passi già verdi nel job `package` di CI.
 
-File di stato: 345.5 MB. `kv_archive` (Python 3.14, zstd): archivio 331 MB (rapporto 0.914), originale
-cancellato, ricostruito in 1.1–2.4 s, ripristinato dal motore (3158 token) in 43–111 ms.
+## Cosa resta a Maurizio (dettagli in PUBLISH-STEPS.md)
 
-Stesso strumento su Linux in locale (5700G, 8 thread): ripristino 89 ms, turno 1.23 s contro 9.78 s.
-
-## Modifiche (file:riga, rispetto a d50b273)
-
-- `ctxproxy/compat.py` (nuovo): `lock_fd`/`unlock_fd` (r. 22–41: `msvcrt.locking` su 1 byte all'offset 0 su
-  Windows, ripetuto finché concesso; `fcntl.flock` altrove), `console_safe` (r. 44: stdout/stderr con
-  `errors="backslashreplace"` se la codifica non è UTF-8), `sqlite_ro_uri` (r. 56: `file:///C:/...` su Windows,
-  invariato su POSIX), `replace` (r. 66: `os.replace`, su Windows riprova ~2.5 s su PermissionError), `O_BINARY`
-  (r. 82), `bad_name` (r. 85: su Windows rifiuta anche `\ : * ? " < > |` e nomi che finiscono con spazio o punto).
-- `ctxproxy/kvarchive.py`: tolto `import fcntl`; lock (r. 279, 284) via compat; `compat.replace` (r. 354, 455, 545);
-  `O_BINARY` su `os.open` (r. 279, 535); controllo nome manifest via `compat.bad_name` (r. 269).
-- `ctxproxy/server.py`: `compat.replace` per `last_request.json` (r. 491); `ConnectionError` invece di
-  BrokenPipe/ConnectionReset (r. 336, 688: su Windows la disconnessione è `ConnectionAbortedError` WinError 10053);
-  `compat.console_safe()` all'avvio (r. 754).
-- `ctxproxy/mcp_server.py`: URI sola lettura via compat (r. 100); `console_safe(stderr)` (r. 372).
-- `ctxproxy/fake_engine.py` r. 273: `ConnectionError` (fake engine conta le cancellazioni anche su Windows).
-- `ctxproxy/check.py` r. 85, `ctxproxy/packtok.py` r. 20: `encoding="utf-8"` esplicito.
-- `ctxproxy/demo.py` r. 101: `TemporaryDirectory(ignore_cleanup_errors=True)` (sqlite aperto su Windows).
-- `tests/*.py`: `TemporaryDirectory(ignore_cleanup_errors=True)` (16 file; solo pulizia).
-- `tests/test_compat.py` (nuovo, 124 righe): lock esclusivo (due fd, due thread), import di kvarchive senza
-  fcntl, URI con spazi/`#`/`%`, replace, bad_name, stream cp1252.
-- `tools/state_e2e.py` (nuovo): e2e dello stato salvato con llama-server vero, qualunque OS.
-- `examples/start-windows.bat` (nuovo, CRLF, `.gitattributes`): engine + check + proxy; provato in CI.
-- `.github/workflows/ci.yml`: job `test-windows` (3.10, 3.14) e `llama-windows` (zip b11430 sha256
-  `b608455b…9666`, modello sha256 `361cc681…e1d` come Linux). Linux `llama-cpu`: build `GGML_NATIVE=OFF` + nuova
-  chiave di cache (la build in cache era `-march=native` e su un runner con CPU diversa moriva con "Illegal
-  instruction": difetto preesistente, emerso qui) e passo state_e2e.
-- `README.md`: tabella "Saved state, measured" (riga Windows), Platforms → "Windows, native" con PowerShell, .bat,
-  cosa è testato e cosa no; WSL resta come alternativa (ancora "Not yet tested"). Tests: state_e2e.
-- `CHANGELOG.md`: voce 0.3.2 "unreleased". Versione in `pyproject.toml`/`__init__.py` lasciata 0.3.1: il bump è
-  nella card figlia PyPI (t_a7ee3301).
-
-Comportamento su Linux: invariato (compat su POSIX chiama esattamente le stesse funzioni di prima; l'unica differenza
-è che `ConnectionAbortedError`/altre `ConnectionError` ora sono trattate come disconnessione del client).
-
-## Audit: cose controllate e non cambiate
-
-- `signal`: non usato nel pacchetto. `os.chmod`: solo in un test (funziona anche su Windows, sola lettura).
-- `/` cablati: solo su percorsi HTTP o su percorsi di file *dentro i messaggi* del modello (recall), non su file locali.
-- Nomi dei file di stato (`c…-seg0-auto-….bin`, `…-anchor1.bin`): nessun `:`.
-- `slot_dir` vs `--slot-save-path`: il proxy non confronta stringhe; `check --live` verifica che il file salvato dal
-  motore compaia in `slot_dir` (passato su Windows con `.\slots` e percorso `D:\...` assoluto).
-- `os.uname()` in kvarchive (r. 242) è dentro un ramo Linux già protetto.
-
-## Limiti residui
-
-- Non testato: GPU (CUDA/Vulkan) su Windows reale, Windows desktop (solo runner CI), agenti veri (pi, Claude Code,
-  Codex) su Windows, dashboard, WSL.
-- Il caso guida (RTX 2060 6 GB, 131K, KV Q8, `-np 1`) non è riproducibile qui: nessuna GPU. Per 131K con KV Q8 il
-  file di stato cresce in proporzione (≈345 MB per 3.2K token con 0.6B in F16: dipende dal modello).
-- Il lock Windows (`msvcrt.locking` LK_LOCK) da solo riprova ~10 s e poi solleva errore; compat lo ripete finché
-  non lo ottiene, quindi attende senza limite come `flock`. Il test (`tests/test_compat.py`, due fd sullo stesso
-  file in due thread) passa su Windows CI; un test fra processi distinti non c'è.
-- Un errore unitario locale isolato non riprodotto (vedi sopra).
+1. (fatti) account PyPI, pending Trusted Publisher, environment `pypi` su lastreload/mnemonic-proxy.
+2. Merge `feature/pypi` su lastreload/main (fast-forward).
+3. Release `v0.3.2` su GitHub → `publish.yml` pubblica.
+4. Verifica `pip install mnemonic-proxy==0.3.2` in venv pulito.
+5. Social preview: caricare `docs/assets/social-preview.png`.
