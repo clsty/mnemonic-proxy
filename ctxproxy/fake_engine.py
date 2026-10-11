@@ -270,7 +270,7 @@ class FakeEngine:
                             time.sleep(slow)
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
-                except (BrokenPipeError, ConnectionResetError):
+                except ConnectionError:   # Windows: ConnectionAbortedError (WinError 10053) too
                     eng.cancelled += 1
                 self.close_connection = True
 

@@ -68,7 +68,7 @@ def sha(p):
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.d = self.tmp.name
         self.arc = K.KvArchive(os.path.join(self.d, "arc"), threads=2)
 

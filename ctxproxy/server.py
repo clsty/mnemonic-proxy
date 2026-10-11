@@ -332,7 +332,7 @@ class Proxy:
                     last_ka = time.monotonic()
                 if choice.get("finish_reason"):
                     finish = choice["finish_reason"]
-        except (ClientGone, BrokenPipeError, ConnectionResetError):
+        except (ClientGone, ConnectionError):   # ConnectionError: also ConnectionAbortedError (Windows)
             call.close()
             raise ClientGone()
         finally:
@@ -684,7 +684,7 @@ def make_handler(proxy: Proxy):
                     self.wfile.flush()
             except ClientGone:
                 pass
-            except (BrokenPipeError, ConnectionResetError):
+            except ConnectionError:   # BrokenPipe, ConnectionReset, ConnectionAborted (Windows)
                 proxy.journal.log("client_disconnect", where="done")
             except Exception as e:  # noqa: BLE001
                 proxy.journal.log("proxy_error", error=repr(e)[:500])

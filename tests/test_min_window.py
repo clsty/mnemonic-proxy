@@ -38,7 +38,7 @@ class Base(unittest.TestCase):
     flavor = "llama"
 
     def start(self, n_ctx):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self.tmp.cleanup)
         self.eng = FakeEngine(flavor=self.flavor, slot_save=False, n_ctx=n_ctx)
         self.url = self.eng.start()

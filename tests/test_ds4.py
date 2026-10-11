@@ -62,7 +62,7 @@ class Ds4Base(unittest.TestCase):
     cfg_raw: dict = {}
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.eng = FakeEngine(policy, flavor="ds4", n_ctx=65536)
         self.url = self.eng.start()
         raw = {"slot_save": True, "mask_anchor": True, "autosave": True, "kv_archive": True, "mask_tool_args": True,

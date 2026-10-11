@@ -29,7 +29,7 @@ def mk(tc=None, **over):
     cfg = Config.from_dict({"window": 131072, "mask_trigger": 12000, "mask_target": 6000, "keep_recent_tokens": 2500,
                             "min_mask_tokens": 150, "min_batch_tokens": 200, "min_age_turns": 2,
                             "mask_anchor": False, **over})
-    tmp = tempfile.TemporaryDirectory()
+    tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
     st = Store(os.path.join(tmp.name, "a.sqlite"))
     j = Journal(os.path.join(tmp.name, "j.jsonl"))
     return Manager(cfg, st, tc or TokenCounter(3.5), j), tmp

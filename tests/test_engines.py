@@ -114,7 +114,7 @@ class LlamaBase(unittest.TestCase):
                       "autorestore_min_gain": 1000, "slot_save": True}
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.eng = FakeEngine(flavor=self.flavor, slot_save=self.slot_save, n_ctx=131072)
         self.url = self.eng.start()
         self.slot_dir = os.path.join(self.tmp.name, "slots")
@@ -282,7 +282,7 @@ class TestMcp(unittest.TestCase):
     def setUp(self):
         from ctxproxy import mcp_server
         self.m = mcp_server
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.db = os.path.join(self.tmp.name, "archive.sqlite")
         make_archive(self.db)
         os.chmod(self.db, 0o444)

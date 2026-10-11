@@ -56,7 +56,7 @@ class CheckBase(unittest.TestCase):
         p = mock.patch.dict(os.environ, {"MNEMONIC_PROXY_ALLOW_SMALL_WINDOW": "1"})
         p.start()
         self.addCleanup(p.stop)
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self.tmp.cleanup)
         self.eng = FakeEngine(flavor=self.flavor, slot_save=self.slot_save, n_ctx=self.n_ctx)
         self.url = self.eng.start()

@@ -113,7 +113,7 @@ class TestShortenTool(unittest.TestCase):
 
 class TestManager(unittest.TestCase):
     def mk(self, **over):
-        tmp = tempfile.TemporaryDirectory()
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         cfg = Config.from_dict({"mask_anchor": False, **over})
         return Manager(cfg, Store(os.path.join(tmp.name, "a.sqlite")), TokenCounter(3.5),
                        Journal(os.path.join(tmp.name, "j.jsonl"))), tmp

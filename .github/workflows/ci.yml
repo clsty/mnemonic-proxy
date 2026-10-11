@@ -217,18 +217,16 @@ jobs:
           if ($h -ne $env:MODEL_SHA256) { throw "model sha256 $h != $env:MODEL_SHA256" }
       - name: install
         run: python -m pip install .
-      - name: engine (llama-server.exe --slot-save-path .\slots)
+      # one step: on Windows runners the processes a step starts are killed when the step ends
+      - name: engine (llama-server.exe --slot-save-path .\slots), check --live, proxy + chat round trip
         run: |
           New-Item -ItemType Directory -Force slots, data | Out-Null
-          Start-Process -FilePath $env:LLAMA_SERVER -ArgumentList "-m","models\model.gguf","-c","32768","--parallel","1","--jinja","--slot-save-path",".\slots","--port","8095" -RedirectStandardOutput engine.log -RedirectStandardError engine.err.log
+          $e = Start-Process -FilePath $env:LLAMA_SERVER -ArgumentList "-m","models\model.gguf","-c","32768","--parallel","1","--jinja","--slot-save-path",".\slots","--port","8095" -RedirectStandardOutput engine.log -RedirectStandardError engine.err.log -PassThru
           foreach ($i in 1..180) { try { Invoke-RestMethod http://127.0.0.1:8095/health | Out-Null; break } catch { Start-Sleep 1 } }
           Invoke-RestMethod http://127.0.0.1:8095/health
-      - name: mnemonic-proxy check --live (slot_dir .\slots = --slot-save-path .\slots)
-        run: |
+          # slot_dir .\slots = --slot-save-path .\slots
           mnemonic-proxy check --live --upstream http://127.0.0.1:8095 --port 8096 --data .\data --config examples\config.llama-server.json
           if ($LASTEXITCODE -ne 0) { exit 1 }
-      - name: proxy + chat round trip
-        run: |
           $p = Start-Process -FilePath mnemonic-proxy -ArgumentList "--upstream","http://127.0.0.1:8095","--port","8096","--data",".\data","--config","examples\config.llama-server.json" -RedirectStandardOutput proxy.log -RedirectStandardError proxy.err.log -PassThru
           foreach ($i in 1..30) { try { Invoke-RestMethod http://127.0.0.1:8096/health | Out-Null; break } catch { Start-Sleep 1 } }
           Invoke-RestMethod http://127.0.0.1:8096/v1/engine | ConvertTo-Json -Depth 5
@@ -237,8 +235,9 @@ jobs:
           $r | ConvertTo-Json -Depth 6
           if (-not (Select-String -Path data\journal.jsonl -Pattern '"event": "request"' -Quiet)) { throw "no request in the journal" }
           Stop-Process -Id $p.Id
-          Get-Process llama-server -ErrorAction SilentlyContinue | Stop-Process
+          Stop-Process -Id $e.Id
       - name: saved state end to end (restart, restore from disk vs re-read, kv_archive)
+        if: success() || failure()
         run: |
           python tools\state_e2e.py --server $env:LLAMA_SERVER --model models\model.gguf --work e2e --kv-archive
           if ($LASTEXITCODE -ne 0) { exit 1 }

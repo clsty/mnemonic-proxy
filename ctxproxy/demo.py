@@ -98,7 +98,7 @@ def run(out=None, keep: str | None = None) -> bool:
     _p(out, "mnemonic-proxy demo — offline, scripted fake model, temporary folder\n")
     _p(out, "Proves: verbatim archive, masking (receipts), recall resolved inside the proxy.")
     _p(out, "Does not prove: real model quality or tool calling, saved engine state (KV). See README, Tier 1.\n")
-    tmp = tempfile.TemporaryDirectory(prefix="mnemonic-demo-")
+    tmp = tempfile.TemporaryDirectory(prefix="mnemonic-demo-", ignore_cleanup_errors=True)
     data = keep or tmp.name
     os.makedirs(data, exist_ok=True)
     model = ScriptedModel()

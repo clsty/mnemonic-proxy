@@ -57,7 +57,7 @@ RTOOLS = [{"type": "function", "name": "shell", "description": "esegue", "parame
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.eng = FakeEngine(policy)
         url = self.eng.start()
         cfg = Config.from_dict({"window": 131072})

@@ -46,7 +46,7 @@ class Base(unittest.TestCase):
     cfg_over: dict = {}
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.eng = FakeEngine(getattr(self, "policy", default_policy))
         self.url = self.eng.start()
         cfg = Config.from_dict({"window": 131072, "mask_trigger": 30000, "mask_target": 15000,

@@ -43,7 +43,7 @@ def digest(reqs: list) -> list[str]:
 class TestScenario(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory()
+        cls.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         d = cls.tmp.name
         for name in ("en", "legacy", "it"):
             os.makedirs(os.path.join(d, name))
@@ -85,7 +85,7 @@ class TestScenario(unittest.TestCase):
 
 class Base(unittest.TestCase):
     def mk(self, **kw):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self.tmp.cleanup)
         st = Store(os.path.join(self.tmp.name, "a.sqlite"))
         self.addCleanup(st.db.close)

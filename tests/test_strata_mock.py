@@ -59,7 +59,7 @@ class StrataMock(unittest.TestCase):
         self.engine = Recording(tok, ["</think>\n\nok"], max_context=1 << 20)
         self.svc = Service(self.engine, tok, ChatTemplate(Path(STRATA) / "serve/chat_template.jinja"))
         self.httpd = serve(self.svc, port=PORT)
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         # ByteTokenizer = 1 token per byte: soglie in "byte"
         cfg = Config.from_dict({"window": 1 << 20, "chars_per_token": 1.0, "mask_trigger": 90000,
                                 "mask_target": 45000, "keep_recent_tokens": 20000, "segments_enabled": False})

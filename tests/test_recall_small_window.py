@@ -74,7 +74,7 @@ class TestRecallSmallWindow(unittest.TestCase):
 
     def setUp(self):
         self.k, self.got = None, []
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.eng = FakeEngine(self.policy, flavor="ds4", n_ctx=8192)
         url = self.eng.start()
         with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "examples",

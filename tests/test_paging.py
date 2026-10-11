@@ -152,7 +152,7 @@ class TestReceiptsInManager(unittest.TestCase):
         import tempfile
         cfg = Config.from_dict({"window": 131072, "mask_trigger": 4000, "mask_target": 2000, "keep_recent_tokens": 800,
                                 "min_mask_tokens": 100, "min_batch_tokens": 200, **over})
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         return Manager(cfg, Store(os.path.join(self.tmp.name, "a.sqlite")), TokenCounter(3.5),
                        Journal(os.path.join(self.tmp.name, "j.jsonl")))
 

@@ -43,7 +43,7 @@ class Base(unittest.TestCase):
                                                           "arguments": json.dumps({"query": "pappagallo"})}}]}
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.eng = FakeEngine(self.policy)
         self.url = self.eng.start()
         self.db = os.path.join(self.tmp.name, "a.sqlite")
