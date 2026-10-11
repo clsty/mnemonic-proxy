@@ -75,12 +75,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: llama.cpp/build/bin
-          key: llama-${{ env.LLAMA_TAG }}-cpu-ubuntu-24.04
-      - name: build llama-server ${{ env.LLAMA_TAG }} (CPU)
+          key: llama-${{ env.LLAMA_TAG }}-cpu-ubuntu-24.04-nonnative
+      # GGML_NATIVE=OFF: the cache is shared by runners with different CPUs; a -march=native build from an
+      # AVX-512 runner dies with "Illegal instruction" on one without it
+      - name: build llama-server ${{ env.LLAMA_TAG }} (CPU, portable)
         if: steps.llama-cache.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp
-          cmake -S llama.cpp -B llama.cpp/build -DCMAKE_BUILD_TYPE=Release -DLLAMA_BUILD_TESTS=OFF
+          cmake -S llama.cpp -B llama.cpp/build -DCMAKE_BUILD_TYPE=Release -DLLAMA_BUILD_TESTS=OFF -DGGML_NATIVE=OFF
           cmake --build llama.cpp/build --config Release -j "$(nproc)" --target llama-server
       - name: cache model
         uses: actions/cache@v4
@@ -118,6 +120,7 @@ jobs:
         if: always()
         run: tail -n 50 engine.log proxy.log || true
       - name: saved state end to end (restart, restore from disk vs re-read, kv_archive)
+        if: success() || failure()
         run: python tools/state_e2e.py --server llama.cpp/build/bin/llama-server --model models/model.gguf --work e2e --kv-archive
       - name: e2e logs
         if: always()

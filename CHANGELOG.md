@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.3.2 — 2026-10-11
+
+Runs natively on Windows (no WSL), with saved engine state.
+
+- **Windows without WSL.** The `kv_archive` lock used `fcntl`, which does not exist on Windows: `ctxproxy/compat.py`
+  takes an exclusive lock with `msvcrt.locking` there (`fcntl.flock` elsewhere, unchanged). Atomic renames retry for
+  ~2.5 s when Windows reports the destination as busy (an antivirus scan, a reader of `last_request.json`). Files
+  opened with `os.open` are binary (`O_BINARY`). The read-only archive of the MCP server is opened with a URI that
+  works with drive letters (`file:///C:/...`). Manifest names are refused if they contain `\` or `:` too.
+- **Console output never crashes the proxy.** On a Windows console (cp1252 and similar) characters the console cannot
+  show (`—`, `⟪`, `📌`) are replaced instead of raising `UnicodeEncodeError`: `mnemonic-proxy demo` used to fail there.
+  The archive, the journal and the prompt are untouched (UTF-8 files).
+- **Client disconnect on Windows.** A client that drops a stream shows up as `ConnectionAbortedError`
+  (WinError 10053) on Windows: it is now handled like a broken pipe (journal `client_disconnect`, upstream stream
+  closed) instead of ending up as a proxy error.
+- **CI on `windows-latest`**: unit tests (Python 3.10 and 3.14), `mnemonic-proxy demo` with a cp1252 console,
+  `check` against the fake engine; on demand, the official llama.cpp `b11430` Windows CPU build (`llama-server.exe`,
+  zip checksum verified) with Qwen3-0.6B: `check --live` READY, chat round trip, and `tools/state_e2e.py`.
+- **`tools/state_e2e.py`** (any OS): conversation through the proxy, autosave in `slot_dir`, engine restart,
+  autorestore from disk, then the same turn with the state file hidden as the re-read baseline; with `--kv-archive`
+  the state file is archived, deleted, rebuilt and restored by the engine. Windows CI, 3.2K tokens: restore 95 ms,
+  turn 2.3 s instead of 35.7 s. Linux CI runs it as well.
+- CI (Linux): the cached llama.cpp build is no longer `-march=native` (`GGML_NATIVE=OFF`); a build cached on one
+  runner crashed with "Illegal instruction" on a runner with a different CPU.
+
+Maurizio Verde — LastReload
+
 ## 0.3.1 — 2026-10-08
 
 The texts the model reads are in English for new conversations.

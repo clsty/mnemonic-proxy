@@ -106,6 +106,7 @@ Resuming a conversation instead of re-reading it:
 | Strata (session-files branch), 110K tokens, RTX 4070 Ti | 1.4 s | ≈50 s |
 | Strata (session-files branch), 69K tokens, after restart | 2.9 s | 33 s |
 | llama-server, 8.2K tokens, CPU, Qwen3-0.6B | 1.9 s | 28.6 s |
+| llama-server.exe, native Windows (CI runner), 3.2K tokens, CPU, Qwen3-0.6B | 2.3 s | 35.7 s |
 
 Times are for restoring the conversation's context; loading the model is separate.
 
@@ -167,7 +168,7 @@ Three levels. Each one stands on its own.
 | **T1 — real model on CPU** | a real agent (pi) writing code through the proxy, masking, recall, resume after an engine restart | + cmake, a C++ compiler, Node.js ≥ 22.19, ~9 GB RAM (the engine at `-c 32768`), 3.5 GB disk | ~45 minutes |
 | **T2 — real use (GPU)** | your own model and agent, long sessions | a GPU engine | — |
 
-Commands are for Linux; see [Platforms](#platforms) for macOS and Windows (WSL).
+Commands are for Linux; see [Platforms](#platforms) for macOS and Windows (native or WSL).
 
 ### T0 — see it work (1 minute, no model)
 
@@ -523,8 +524,28 @@ Start with `mnemonic-proxy check` (add `--live` to exercise the engine): every f
 - **macOS**: the proxy is plain Python and should work as on Linux (not yet tested). Build llama.cpp the same way
   (Metal is on by default on Apple Silicon) or install it with Homebrew (`brew install llama.cpp`), then use the same
   `llama-server` command; `sha256sum` is `shasum -a 256`.
-- **Windows**: use WSL 2 (Ubuntu) and follow the Linux commands inside WSL. Keep the engine, the proxy and the
-  `slots` folder all inside WSL, so that `slot_dir` and `--slot-save-path` are the same path. Not yet tested.
+- **Windows, native** (since 0.3.2; tested on the `windows-latest` CI runner, not yet on a desktop): Python ≥ 3.10
+  from python.org, the official llama.cpp Windows build (`llama-b11430-bin-win-cpu-x64.zip` or a GPU one). In
+  PowerShell:
+
+  ```powershell
+  py -m venv mnemonic-venv; .\mnemonic-venv\Scripts\Activate.ps1
+  pip install git+https://github.com/lastreload/mnemonic-proxy
+  mnemonic-proxy demo
+  mkdir slots
+  llama-server.exe -m model.gguf -c 32768 --jinja --slot-save-path .\slots --port 8095   # in a second window
+  mnemonic-proxy check --live --upstream http://127.0.0.1:8095 --data .\data --config config.llama-server.json
+  mnemonic-proxy --upstream http://127.0.0.1:8095 --port 8096 --data .\data --config config.llama-server.json
+  ```
+
+  `config.llama-server.json` is in `examples\` (`"slot_dir": "./slots"`: relative paths are resolved from the folder
+  you start the proxy in, so start the engine and the proxy from the same folder). What CI proves on Windows: unit
+  tests, demo on a cp1252 console, `check --live` READY, chat through the proxy, autosave and autorestore after an
+  engine restart (3.2K tokens restored in 95 ms; the turn takes 2.3 s instead of 35.7 s), `kv_archive` round trip.
+  Not tested: real agents (pi, Claude Code, Codex) on Windows, GPU builds, the dashboard. `sha256sum` is
+  `Get-FileHash -Algorithm SHA256`.
+- **Windows, WSL 2**: follow the Linux commands inside WSL. Keep the engine, the proxy and the `slots` folder all
+  inside WSL, so that `slot_dir` and `--slot-save-path` are the same path. Not yet tested.
 
 ## Uninstall
 
@@ -746,7 +767,9 @@ Uses a fake OpenAI-compatible engine (`tests/fake_engine.py`, also runnable stan
 `python3 -m tests.fake_engine --port 18095`). Optional groups are skipped unless their inputs are present: exact
 counting (a tokenizer in `./tok` or `CTX_TOKDIR`, plus `tokenizers`), Strata mock integration (`STRATA_DIR`, plus
 `jinja2`), and `kv_archive` (Python ≥ 3.14). `tools/replay_dry.py` and `tools/replay_exact.py` replay a pi session
-through the context manager offline.
+through the context manager offline. `tools/state_e2e.py --server PATH/llama-server --model M.gguf --work DIR`
+checks saved state end to end with a real llama-server on any OS (restart, restore from disk vs re-read, and
+`kv_archive` with `--kv-archive`). CI runs the unit tests on Linux and on native Windows.
 
 Partly in Italian: code comments, the dashboard UI and the developer notes in `docs/dev-notes/`. Since 0.3.1 every
 text the proxy writes into the model's prompt — receipts and placeholders of hidden content, the handoff-note
