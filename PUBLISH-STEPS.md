@@ -43,7 +43,8 @@ Wait for the `ci` run on lastreload/main to be green (Actions tab).
 ## 4. Release v0.3.2 → the workflow publishes
 
 On GitHub: lastreload/mnemonic-proxy → Releases → Draft a new release → tag `v0.3.2` (create on `main`), title
-`v0.3.2`, notes = the 0.3.2 section of CHANGELOG.md → **Publish release**. Or from the shell:
+`v0.3.2`, notes = the 0.3.2 section of CHANGELOG.md (it already thanks @erycsonero for PR #2: keep the `@`, GitHub
+notifies him) → **Publish release**. Or from the shell:
 
 ```sh
 gh release create v0.3.2 -R lastreload/mnemonic-proxy --target main --title v0.3.2 --notes-file <notes.md>

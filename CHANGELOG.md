@@ -30,6 +30,9 @@ Runs natively on Windows (no WSL), with saved engine state. Available on PyPI.
   autorestore from disk, then the same turn with the state file hidden as the re-read baseline; with `--kv-archive`
   the state file is archived, deleted, rebuilt and restored by the engine. Windows CI, 3.2K tokens: restore 95 ms,
   turn 2.3 s instead of 35.7 s. Linux CI runs it as well.
+- **Strata: the context window is read from the engine** (`context.native` of `/v1/status`), so masking and segment
+  thresholds follow the window Strata actually runs with. Tested by the author with Strata 0.1.41 on an RTX 5060 Ti
+  16 GB. Thanks to @erycsonero for the first external contribution (#2).
 - CI (Linux): the cached llama.cpp build is no longer `-march=native` (`GGML_NATIVE=OFF`); a build cached on one
   runner crashed with "Illegal instruction" on a runner with a different CPU.
 
