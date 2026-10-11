@@ -29,7 +29,6 @@ manifest senza blocchi, e l'originale si cancella solo dopo la ricostruzione ver
 """
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
@@ -37,6 +36,8 @@ import struct
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+
+from . import compat
 
 try:
     from compression import zstd
@@ -265,7 +266,7 @@ class KvArchive:
         return os.path.join(self.root, "blocks", h[:2], h + ".kvb")
 
     def manifest_path(self, name: str) -> str:
-        if "/" in name or name.startswith("."):
+        if compat.bad_name(name):
             raise KvaError("nome non valido: %r" % name)
         return os.path.join(self.root, "manifests", name + ".kva")
 
@@ -275,12 +276,12 @@ class KvArchive:
 
         def __enter__(self):
             self.arc._tlock.acquire()
-            self.fd = os.open(os.path.join(self.arc.root, ".lock"), os.O_RDWR | os.O_CREAT, 0o600)
-            fcntl.flock(self.fd, fcntl.LOCK_EX)
+            self.fd = os.open(os.path.join(self.arc.root, ".lock"), os.O_RDWR | os.O_CREAT | compat.O_BINARY, 0o600)
+            compat.lock_fd(self.fd)
             return self
 
         def __exit__(self, *a):
-            fcntl.flock(self.fd, fcntl.LOCK_UN)
+            compat.unlock_fd(self.fd)
             os.close(self.fd)
             self.arc._tlock.release()
 
@@ -350,7 +351,7 @@ class KvArchive:
             f.write(blob)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, path)
+        compat.replace(tmp, path)
         return len(blob)
 
     def archive(self, src: str, name: str | None = None, delete_original: bool = False,
@@ -451,7 +452,7 @@ class KvArchive:
             vsha, vsize = self._verify_entries(entries)
             if vsha != man["sha256"] or vsize != size:
                 raise CorruptArchive("verification failed for %s: sha256 of the reconstruction differs" % name)
-            os.replace(tmp, mp)
+            compat.replace(tmp, mp)
             self._fsync_dir(os.path.dirname(mp))
         except BaseException:
             try:
@@ -531,7 +532,7 @@ class KvArchive:
         tmp = os.path.join(d, ".%s.kva-tmp-%d" % (os.path.basename(dest), os.getpid()))
         sha, n = hashlib.sha256(), 0
         try:
-            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | compat.O_BINARY, 0o600)
             with os.fdopen(fd, "wb") as f:
                 for raw in self._iter_raw(m["blocks"], check_hash=False):
                     sha.update(raw)
@@ -541,7 +542,7 @@ class KvArchive:
                 if sha.hexdigest() != m["sha256"] or n != m["size"]:
                     raise CorruptArchive("ricostruzione di %s: sha256/dimensione diversi dall'originale" % name)
                 os.fsync(f.fileno())
-            os.replace(tmp, dest)
+            compat.replace(tmp, dest)
             self._fsync_dir(d)
         except BaseException:
             try:

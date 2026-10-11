@@ -82,7 +82,7 @@ def _writable(d):
     try:
         os.makedirs(d, exist_ok=True)
         p = os.path.join(d, ".mnemonic-check-%d" % os.getpid())
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write("x")
         os.remove(p)
         return True, ""

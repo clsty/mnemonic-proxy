@@ -117,3 +117,146 @@ jobs:
       - name: logs
         if: always()
         run: tail -n 50 engine.log proxy.log || true
+      - name: saved state end to end (restart, restore from disk vs re-read, kv_archive)
+        run: python tools/state_e2e.py --server llama.cpp/build/bin/llama-server --model models/model.gguf --work e2e --kv-archive
+      - name: e2e logs
+        if: always()
+        run: |
+          cat e2e/state_e2e.json || true
+          tail -n 40 e2e/engine.log e2e/proxy.log || true
+
+  # Native Windows (no WSL): unit tests, demo and check against the fake engine, in PowerShell.
+  test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: install (pip install .)
+        run: |
+          python -m venv $env:RUNNER_TEMP\venv
+          & $env:RUNNER_TEMP\venv\Scripts\pip.exe install .
+      - name: unit tests
+        run: python -m unittest discover -s tests -t . -v
+      - name: mnemonic-proxy demo (installed command, cp1252 console)
+        env:
+          PYTHONIOENCODING: cp1252
+        run: |
+          Set-Location $env:RUNNER_TEMP
+          & $env:RUNNER_TEMP\venv\Scripts\mnemonic-proxy.exe demo
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & $env:RUNNER_TEMP\venv\Scripts\ctxproxy.exe demo | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: mnemonic-proxy check against the fake engine
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          Set-Location $env:RUNNER_TEMP
+          $py = "$env:RUNNER_TEMP\venv\Scripts\python.exe"
+          $mp = "$env:RUNNER_TEMP\venv\Scripts\mnemonic-proxy.exe"
+          Start-Process -FilePath $py -ArgumentList "-m","ctxproxy.fake_engine","--flavor","llama","--n-ctx","32768","--port","18095" -RedirectStandardOutput fe1.log -RedirectStandardError fe1.err.log
+          Start-Process -FilePath $py -ArgumentList "-m","ctxproxy.fake_engine","--flavor","llama","--n-ctx","8192","--port","18097" -RedirectStandardOutput fe2.log -RedirectStandardError fe2.err.log
+          foreach ($i in 1..50) { try { Invoke-RestMethod http://127.0.0.1:18095/health | Out-Null; Invoke-RestMethod http://127.0.0.1:18097/health | Out-Null; break } catch { Start-Sleep -Milliseconds 200 } }
+          New-Item -ItemType Directory -Force slots | Out-Null
+          Copy-Item "$env:GITHUB_WORKSPACE\examples\config.llama-server.json" .
+          & $mp check --json --upstream http://127.0.0.1:18095 --port 18096 --data .\data --config config.llama-server.json | Tee-Object -FilePath check.json
+          & $py -c "import json; d = json.load(open('check.json')); assert d['ready'] and d['exit_code'] == 0, d"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # windows below 16K are refused (0.3.0)
+          & $mp check --json --upstream http://127.0.0.1:18097 --port 18096 --data .\data --config config.llama-server.json | Out-File -Encoding utf8 check8k.json
+          & $py -c "import json; d = json.load(open('check8k.json', encoding='utf-8-sig')); assert not d['ready'] and d['exit_code'] == 1, d"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          exit 0
+
+  # Native Windows with the official llama.cpp Windows CPU build (llama-server.exe) and Qwen3-0.6B.
+  llama-windows:
+    if: github.event_name == 'workflow_dispatch' && inputs.llama
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      LLAMA_TAG: b11430
+      LLAMA_ZIP: llama-b11430-bin-win-cpu-x64.zip
+      LLAMA_SHA256: b608455b0109793f774537d63d15d4cf2098ddbc5b200ebc9a648e1d85369666
+      MODEL_URL: https://huggingface.co/ggml-org/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf
+      MODEL_SHA256: 361cc68159042c36ebff7715dc5a2e4612153e88f3e9c9c234820849d6dc9e1d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: download llama.cpp ${{ env.LLAMA_TAG }} Windows CPU (checksum verified)
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/ggml-org/llama.cpp/releases/download/$env:LLAMA_TAG/$env:LLAMA_ZIP" -OutFile llama.zip
+          $h = (Get-FileHash llama.zip -Algorithm SHA256).Hash.ToLower()
+          if ($h -ne $env:LLAMA_SHA256) { throw "llama.cpp zip sha256 $h != $env:LLAMA_SHA256" }
+          Expand-Archive llama.zip -DestinationPath llama
+          $exe = Get-ChildItem -Recurse llama -Filter llama-server.exe | Select-Object -First 1
+          "LLAMA_SERVER=$($exe.FullName)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          & $exe.FullName --version
+      - name: cache model
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: model-${{ env.MODEL_SHA256 }}
+      - name: download model (checksum verified)
+        run: |
+          New-Item -ItemType Directory -Force models | Out-Null
+          if (-not (Test-Path models\model.gguf)) { Invoke-WebRequest -Uri $env:MODEL_URL -OutFile models\model.gguf }
+          $h = (Get-FileHash models\model.gguf -Algorithm SHA256).Hash.ToLower()
+          if ($h -ne $env:MODEL_SHA256) { throw "model sha256 $h != $env:MODEL_SHA256" }
+      - name: install
+        run: python -m pip install .
+      - name: engine (llama-server.exe --slot-save-path .\slots)
+        run: |
+          New-Item -ItemType Directory -Force slots, data | Out-Null
+          Start-Process -FilePath $env:LLAMA_SERVER -ArgumentList "-m","models\model.gguf","-c","32768","--parallel","1","--jinja","--slot-save-path",".\slots","--port","8095" -RedirectStandardOutput engine.log -RedirectStandardError engine.err.log
+          foreach ($i in 1..180) { try { Invoke-RestMethod http://127.0.0.1:8095/health | Out-Null; break } catch { Start-Sleep 1 } }
+          Invoke-RestMethod http://127.0.0.1:8095/health
+      - name: mnemonic-proxy check --live (slot_dir .\slots = --slot-save-path .\slots)
+        run: |
+          mnemonic-proxy check --live --upstream http://127.0.0.1:8095 --port 8096 --data .\data --config examples\config.llama-server.json
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: proxy + chat round trip
+        run: |
+          $p = Start-Process -FilePath mnemonic-proxy -ArgumentList "--upstream","http://127.0.0.1:8095","--port","8096","--data",".\data","--config","examples\config.llama-server.json" -RedirectStandardOutput proxy.log -RedirectStandardError proxy.err.log -PassThru
+          foreach ($i in 1..30) { try { Invoke-RestMethod http://127.0.0.1:8096/health | Out-Null; break } catch { Start-Sleep 1 } }
+          Invoke-RestMethod http://127.0.0.1:8096/v1/engine | ConvertTo-Json -Depth 5
+          $body = '{"model": "m", "max_tokens": 32, "messages": [{"role": "user", "content": "Say hello. /no_think"}]}'
+          $r = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8096/v1/chat/completions -ContentType 'application/json' -Body $body
+          $r | ConvertTo-Json -Depth 6
+          if (-not (Select-String -Path data\journal.jsonl -Pattern '"event": "request"' -Quiet)) { throw "no request in the journal" }
+          Stop-Process -Id $p.Id
+          Get-Process llama-server -ErrorAction SilentlyContinue | Stop-Process
+      - name: saved state end to end (restart, restore from disk vs re-read, kv_archive)
+        run: |
+          python tools\state_e2e.py --server $env:LLAMA_SERVER --model models\model.gguf --work e2e --kv-archive
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: logs
+        if: always()
+        run: |
+          Get-Content e2e\state_e2e.json -ErrorAction SilentlyContinue
+          foreach ($f in "engine.log","engine.err.log","proxy.log","proxy.err.log","e2e\engine.log","e2e\proxy.log") { if (Test-Path $f) { "== $f"; Get-Content $f -Tail 40 } }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: llama-windows-e2e
+          path: |
+            e2e/state_e2e.json
+            e2e/engine.log
+            e2e/proxy.log
+            e2e/data/journal.jsonl
+            engine.log
+            engine.err.log
+            proxy.log
+            proxy.err.log

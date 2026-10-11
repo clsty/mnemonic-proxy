@@ -23,6 +23,7 @@ import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from . import compat
 from .core import (LEGACY_RECALL_NAME, RECALL_NAME, Config, Journal, Manager, Store, TokenCounter, content_text,
                    is_human_user)
 from .paging import guard_msg, is_guarded, receipt_contaminated
@@ -487,7 +488,7 @@ class Proxy:
             tmp = os.path.join(d, ".last_request.%d.tmp" % threading.get_ident())
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(rec, f, ensure_ascii=False)
-            os.replace(tmp, os.path.join(d, "last_request.json"))
+            compat.replace(tmp, os.path.join(d, "last_request.json"))
         except (OSError, TypeError, ValueError) as e:  # l'osservabilità non deve mai rompere la richiesta
             self.journal.log("live_dump_error", error=repr(e)[:300])
 
@@ -750,6 +751,7 @@ def load_config(a) -> tuple[dict, Config]:
 def main(argv=None):
     from . import __version__
     argv = list(sys.argv[1:] if argv is None else argv)
+    compat.console_safe()
     if argv and argv[0] == "demo":
         from .demo import main as demo_main
         return demo_main(argv[1:])

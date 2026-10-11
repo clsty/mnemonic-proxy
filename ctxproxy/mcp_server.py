@@ -26,6 +26,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from . import compat
 from .core import Config, Journal, Manager, Store, TokenCounter
 from .recall2 import Recall2
 
@@ -96,7 +97,7 @@ def open_readonly(path: str) -> Store:
     """Store sopra un database aperto in sola lettura (niente schema/migrazioni: nessuna scrittura)."""
     if not os.path.exists(path):
         raise FileNotFoundError(path)
-    uri = "file:%s?mode=ro" % os.path.abspath(path).replace("?", "%3f").replace("#", "%23")
+    uri = compat.sqlite_ro_uri(path)
     st = Store.__new__(Store)
     st.db = sqlite3.connect(uri, uri=True, check_same_thread=False, isolation_level=None)
     st.lock = threading.RLock()
@@ -368,6 +369,7 @@ def main(argv=None):
     ap.add_argument("--http", type=int, metavar="PORT", help="serve streamable HTTP on /mcp instead of stdio")
     ap.add_argument("--host", default="127.0.0.1", help="bind address for --http (default: 127.0.0.1)")
     a = ap.parse_args(argv)
+    compat.console_safe(sys.stderr)
     srv = McpServer(Archive(a.db, a.journal, a.max_tokens, a.tokenizer))
     if a.http:
         srv.serve_http(a.host, a.http)

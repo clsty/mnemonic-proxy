@@ -17,7 +17,7 @@ def build(d: str):
     vocab = json.load(open(os.path.join(d, "vocab.json"), encoding="utf-8"))
     merges = [tuple(m.split(" ")) for m in open(os.path.join(d, "merges.txt"), encoding="utf-8").read().split("\n")
               if m]
-    types = json.load(open(os.path.join(d, "token_type.json")))
+    types = json.load(open(os.path.join(d, "token_type.json"), encoding="utf-8"))
     inv = {i: t for t, i in vocab.items()}
     tk = Tokenizer(models.BPE(vocab=vocab, merges=merges, fuse_unk=False, byte_fallback=False))
     tk.pre_tokenizer = pre_tokenizers.Sequence([
