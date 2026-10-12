@@ -433,6 +433,41 @@ Point the client's OpenAI base URL at `http://127.0.0.1:8096/v1`. For pi, the tw
 `contextWindow`/`maxTokens`). For other clients: their OpenAI-compatible provider setting, plus their own way to turn
 off context compaction.
 
+**omp ([oh-my-pi](https://github.com/can1357/oh-my-pi))** — tested with 18.10.1 on Strata. omp reads YAML from
+`~/.omp/agent/` (or `$PI_CODING_AGENT_DIR`). Add the proxy as a provider in `models.yml`:
+
+```yaml
+providers:
+  mnemonic:
+    baseUrl: http://127.0.0.1:8096/v1
+    api: openai-completions
+    apiKey: none
+    auth: apiKey
+    compat:
+      supportsDeveloperRole: false
+      supportsReasoningEffort: false
+      maxTokensField: max_tokens
+      thinkingFormat: qwen-chat-template   # for Qwen models; drop it for others
+    models:
+      - id: qwen3.8-flash-next-iq3_xxs     # the id your engine reports at /v1/models
+        name: Flash Next via mnemonic-proxy
+        reasoning: true
+        input: [text]
+        contextWindow: 131072              # the engine's real window
+        maxTokens: 16384                   # leave room for reasoning (see the ds4 note below)
+        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}
+```
+
+and turn omp's own compaction off in `config.yml`, so the proxy manages the window:
+
+```yaml
+compaction:
+  enabled: false
+```
+
+Then `omp --model mnemonic/qwen3.8-flash-next-iq3_xxs`. If you use extensions that also shorten tool output (for
+example SoL-Pi's ObservationPack), we have not tested them together with the proxy.
+
 ### Claude Code (Anthropic Messages)
 
 Checked against Claude Code 2.1.287; a 1 h 41 min session with 2.1.284 on Strata is measured
