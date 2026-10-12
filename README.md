@@ -160,10 +160,16 @@ Qwen3.8 Flash Next IQ3_XXS on Strata 0.1.40, RTX 4070 Ti 12 GB, proxy 0.3.1 as r
 | Claude Code 2.1.284 | L: 127K virtual, 3 segment switches | 1 / 1 | yes |
 | pi 0.87.1 | A, B, D | 3 / 3 | 3 / 3 |
 | pi 0.87.1 | L: 231K virtual, 6 segment switches | 1 / 1 | yes (5 keyword searches) |
+| omp 18.10.1 (oh-my-pi) | A, B, C, D | 4 / 4 | 4 / 4 ¹ |
+| omp 18.10.1 (oh-my-pi) | L: 82K virtual, 2 segment switches | 1 / 1 | yes (6 calls) |
+
+¹ With omp the model repeated the values in its own one-line answer in B (all three) and D (two of three), so they
+stayed visible: there recall was strictly needed only for D's third value. A and C are clean.
 
 A control with the full history in the prompt (no masking) was right in every short episode. In the long one it
-re-ran the setup script and wrote the new, wrong values — the proxy run did better. Each episode was checked to have
-none of the true values in the final prompt; one file per configuration was also checked by hand.
+re-ran the setup script and wrote the new, wrong values — the proxy run did better. Each episode was checked for the
+true values in the final prompt (none were there, except the omp cases in ¹); one file per configuration was also
+checked by hand.
 
 Across 18 real sessions (pi, Claude Code, Codex) the need is rare: 5 spontaneous recalls against 108 after a question
 about the past; 30 re-reads of a masked, unchanged file (≈37K tokens); 4 edits out of 505 failed because the model
@@ -195,7 +201,7 @@ Numbers measured by users on their own hardware and shared with permission. Not 
 
 The user reports no compaction pauses during the session. All 8 recalls happened in the last two minutes of the
 session, when the user asked for a summary of the day: during normal work the model never called `recall` on its
-own. In our tests with Claude Code and pi the model did call `recall` by itself when the value could not be re-read
+own. In our tests with Claude Code, pi and omp the model did call `recall` by itself when the value could not be re-read
 from disk ([Does the model recall on its own?](#does-the-model-recall-on-its-own)); with Cline we could not test it.
 
 **Share your numbers.** If you run the proxy on your own hardware, a report helps — especially with clients and models
@@ -629,7 +635,7 @@ provider).
 
 | client \ engine | Strata | llama-server | ds4-server | any OpenAI-compatible |
 |---|---|---|---|---|
-| Chat Completions (pi, Hermes, Continue…) | tested · full | tested on CPU · full | tested with pi (GLM 5.3, Qwen3.8) · engine keeps its own state | base (no saved state) |
+| Chat Completions (pi, omp, Hermes, Continue…) | tested · full | tested on CPU · full | tested with pi (GLM 5.3, Qwen3.8) · engine keeps its own state | base (no saved state) |
 | Claude Code (Anthropic Messages) | **tested** (1 h 41 min live session) | experimental | experimental | experimental |
 | Codex (Responses) | **tested** (live, exact recall) | experimental | experimental | experimental |
 | MCP recall server (Claude Code, Codex, Hermes) | tested read-only on a real archive | | | |
@@ -793,7 +799,7 @@ alone and the proxy uses `history_recall` (or `load_tools`) instead.
   original estimate. Questions about visible content: 7/7 either way. Measured without the proxy's recall loop.
 - Facts scattered in a long prompt: 0 wrong out of 160 on Strata, but 9 omissions, all from 64K up (two seeds).
 - Recall search is lexical (FTS5 + structure), not semantic: a paraphrase with no shared words can miss.
-- Unprompted recall is measured with Claude Code and pi on one model; with Cline a user saw recall only when asking
+- Unprompted recall is measured with Claude Code, pi and omp on one model; with Cline a user saw recall only when asking
   about the past, and we could not reproduce that setup.
 - One sequence: the proxy serialises requests and assumes it is the engine's only client; another client on the
   same engine costs re-reads.
