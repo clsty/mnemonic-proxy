@@ -191,7 +191,49 @@ footer b{color:var(--cy)}
         <tr><td>context</td><td>328K virtual, ≤46K in the prompt, 14 segment switches</td><td>exact recall: 36 tests, 8/8 messages</td></tr>
       </table>
       <p class="cap">Claude Code 2.1.284 on a low-threshold test config (masking at 36K) so that segments switch. Facts scattered in 16K–122K prompts on Strata alone: 151/160 exact, 0 wrong, 9 omitted (all ≥ 64K).</p>
-      <p class="sub" style="margin-top:18px"><b>Why it matters.</b> Without saved state, the whole prefill of a long conversation is paid again every time the engine loses it — after a restart, when another client used the engine in between, when the proxy returns to a sealed segment. On a 12&nbsp;GB GPU that is close to a minute for 100K tokens; restoring takes a second or two, from disk, not VRAM. Any client of a local engine benefits, not just this proxy. llama-server has it (<code>--slot-save-path</code>); for Strata it is proposed in <a href="https://github.com/Niko1221/Strata/pull/668">PR&nbsp;#668</a>, not yet merged.</p>
+      <p class="sub" style="margin-top:18px"><b>Why it matters.</b> Without saved state, the whole prefill of a long conversation is paid again every time the engine loses it — after a restart, when another client used the engine in between, when the proxy returns to a sealed segment. On a 12&nbsp;GB GPU that is close to a minute for 100K tokens; restoring takes a second or two, from disk, not VRAM. Any client of a local engine benefits, not just this proxy. llama-server has it (<code>--slot-save-path</code>); Strata has it since <a href="https://github.com/Niko1221/Strata/releases/tag/v0.1.40">0.1.40</a> (<a href="https://github.com/Niko1221/Strata/pull/668">PR&nbsp;#668</a>), opt-in with <code>--slot-save-path</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="recall-on-its-own">
+  <h2>Does the model recall on its own?</h2>
+  <p class="sub">Recall only helps if the model uses it without being told. Short scripted tasks where a value needed at the end exists <b>only</b> in an old, masked tool output — not on disk, not reproducible — and the final request never says "remember" or "earlier": a random script output, a file read once then deleted, the old version of an overwritten config, an error from a service that is then shut down, and a long session with several segment switches.</p>
+  <table>
+    <tr><th>client · Qwen3.8 Flash Next on Strata 0.1.40, RTX 4070 Ti 12&nbsp;GB, proxy 0.3.1</th><th>short episodes: right values</th><th>long session</th></tr>
+    <tr><td>Claude Code 2.1.284</td><td class="y">8 / 8, all via <code>recall</code> the model chose to call</td><td class="y">127K virtual, 3 segment switches: right</td></tr>
+    <tr><td>pi 0.87.1</td><td class="y">3 / 3, all via <code>recall</code></td><td class="y">231K virtual, 6 segment switches: right</td></tr>
+    <tr><td>omp 18.10.1 (oh-my-pi)</td><td class="y">4 / 4, all with <code>recall</code> ¹</td><td class="y">82K virtual, 2 segment switches: right</td></tr>
+  </table>
+  <p class="cap">¹ With omp the model repeated some of the values in its own one-line answers, so in two episodes recall was strictly needed only for part of them. Across 18 real sessions the need is rare: 5 spontaneous recalls against 108 after a question about the past; when a file can be re-read, the model re-reads it. One model, one run of each long session, scaled-down thresholds (32K window) for the long ones. Details in the <a href="https://github.com/lastreload/mnemonic-proxy#does-the-model-recall-on-its-own">README</a>.</p>
+</section>
+
+<section id="users">
+  <div class="two">
+    <div>
+      <h2>User reports</h2>
+      <p class="sub">Measured by users on their own hardware, shared with permission, not reproduced by us.</p>
+      <table>
+        <tr><th></th><th><a href="https://www.reddit.com/r/Qwen_AI/comments/1x26aj9/comment/pfb7uu7/">u/Swimming-Farmer7815</a></th></tr>
+        <tr><td>hardware</td><td>RTX 5060 Ti 16&nbsp;GB, Xeon E5-2699 v3, 64&nbsp;GB</td></tr>
+        <tr><td>engine · client</td><td>Strata, Qwen3.8-Flash-Next IQ3_XXS, 128K · Cline</td></tr>
+        <tr><td>session</td><td>13&nbsp;h, ~280K tokens of history, ~77K in the last request</td></tr>
+        <tr><td>saved state</td><td class="y">~58K tokens restored in &lt;&nbsp;4&nbsp;s (≈1&nbsp;min&nbsp;15&nbsp;s to re-read)</td></tr>
+        <tr><td><code>recall</code></td><td>8 calls, all used — only when asked for a summary of the day</td></tr>
+      </table>
+      <p class="cap"><b>Share your numbers</b>, especially with clients and models we have not tested: open an issue with the <a href="https://github.com/lastreload/mnemonic-proxy/issues/new?template=user-report.md">user report</a> template.</p>
+    </div>
+    <div>
+      <h2>Long sessions on ds4</h2>
+      <p class="sub">Proxy vs pi's own compaction, <a href="https://github.com/antirez/ds4">ds4-server</a> on a Ryzen AI Max+ 395 (128&nbsp;GB), 32K window, one run per side:</p>
+      <table>
+        <tr><th>16-step task</th><th>with proxy</th><th>pi alone</th></tr>
+        <tr><td>Qwen3.8 Flash Next Q2: steps in 2&nbsp;h</td><td class="y">16 / 16</td><td>14 / 16</td></tr>
+        <tr><td>re-reads from token 0</td><td class="y">0</td><td>23</td></tr>
+        <tr><td>tokens read by the engine</td><td class="y">167K</td><td>267K</td></tr>
+        <tr><td>DeepSeek V4 Flash Q2 (official ds4)</td><td class="y">16 / 16, 0 re-reads</td><td>not run</td></tr>
+      </table>
+      <p class="cap">A 29-step, 4-hour run gave 29/29 vs 10/29 and 1 vs 38 re-reads, but it is not a clean quality result: with the client's 4,096 max output tokens Qwen3.8's reasoning was cut before acting and unanswered steps piled up. <b>Give reasoning models room</b> (8192+ output tokens). Details in the <a href="https://github.com/lastreload/mnemonic-proxy#long-sessions-on-ds4-proxy-vs-pis-own-compaction">README</a>.</p>
     </div>
   </div>
 </section>
@@ -213,12 +255,12 @@ footer b{color:var(--cy)}
         -c model_providers.local.wire_api=responses        <span class="c"># Responses</span></pre>
   <table style="margin-top:26px">
     <tr><th>client \ engine</th><th>Strata</th><th>llama-server</th><th>ds4-server</th><th>any OpenAI-compatible</th></tr>
-    <tr><td>Chat Completions (pi, Hermes, Continue…)</td><td class="y">tested · full</td><td class="w">tested on CPU · full</td><td class="w">tested with pi · engine keeps its own state</td><td class="w">base (no saved state)</td></tr>
+    <tr><td>Chat Completions (pi, omp, Hermes, Continue…)</td><td class="y">tested · full</td><td class="w">tested on CPU · full</td><td class="w">tested with pi · engine keeps its own state</td><td class="w">base (no saved state)</td></tr>
     <tr><td>Claude Code (Anthropic Messages)</td><td class="y">tested live</td><td class="w">experimental</td><td class="w">experimental</td><td class="w">experimental</td></tr>
     <tr><td>Codex (Responses)</td><td class="y">tested live</td><td class="w">experimental</td><td class="w">experimental</td><td class="w">experimental</td></tr>
     <tr><td>MCP recall server (Claude Code, Codex, Hermes)</td><td colspan="4" class="w">tested read-only on a real archive</td></tr>
   </table>
-  <p class="cap">ds4-server (<a href="https://github.com/antirez/ds4">antirez/ds4</a>) with pi on a Ryzen AI Max+ 395, 8K window: GLM 5.3 Flash Q2 recalled an error line removed from the prompt (right id and shard, plus an invented timestamp), and after each recall ds4 read only the new 614–634 tokens. The 8K window was chosen to stress recall; the proxy now requires at least 16K. mnemonic-proxy is a separate tool, compatible with ds4-server; it is not part of the ds4 project.</p>
+  <p class="cap">ds4-server (<a href="https://github.com/antirez/ds4">antirez/ds4</a>) with pi on a Ryzen AI Max+ 395, 8K window: GLM 5.3 Flash Q2 recalled an error line removed from the prompt (right id and shard, plus an invented timestamp), and after each recall ds4 read only the new 614–634 tokens. The 8K window was chosen to stress recall; the proxy now requires at least 16K. Long 32K sessions on ds4 are above. mnemonic-proxy is a separate tool, compatible with ds4-server; it is not part of the ds4 project.</p>
 </section>
 
 <section id="honest">
