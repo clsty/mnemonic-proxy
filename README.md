@@ -684,9 +684,9 @@ mnemonic-proxy --upstream http://127.0.0.1:8110 --port 8096 --data ./data --conf
 - `checkpoint_align_tokens` (off by default): when set to ds4's checkpoint interval (by default 10240 tokens,
   `--kv-cache-continued-interval-tokens` rounded to `--kv-cache-boundary-align-tokens`), a masking block starts just
   after a multiple of it, so fewer tokens are re-read after the last disk checkpoint. Needs an exact `--tokenizer`
-  to be meaningful. Not measured yet.
-- Not proven: long real sessions; Claude Code and Codex in front of ds4; parallel sessions (`--batched-session N`)
-  — the proxy still serialises requests.
+  to be meaningful. In one long session at 32K (below) it changed no masking decision.
+- Not proven: Claude Code and Codex in front of ds4; parallel sessions (`--batched-session N`) — the proxy still
+  serialises requests.
 
 mnemonic-proxy is a separate tool, compatible with ds4-server and tested with it; it is not part of the ds4 project.
 
@@ -717,6 +717,53 @@ Reports (Italian): [DS4-GLM-RESULT.md](https://github.com/lastreload/mnemonic-pr
 [DS4-QWEN-COMPARE-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-QWEN-COMPARE-RESULT.md) (also Qwen3.8 quality on ds4 vs Strata),
 [RECALL-8K-030-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/RECALL-8K-030-RESULT.md) (the 0.3.0 run),
 [DS4-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-RESULT.md) (the adapter).
+
+#### Long sessions on ds4: proxy vs pi's own compaction
+
+Same hardware, ds4 `fc80bd6` (+ the local ROCm port for Qwen3.8), proxy 0.3.2, pi 1.0.3, window 32K, one run per
+side. Without the proxy pi compacts by itself (`reserveTokens 8192`, `keepRecentTokens 8000`: our choice for 32K).
+Every answer below is graded by tests and regexes written before the runs.
+
+| task, model | | with proxy | pi alone |
+|---|---|---|---|
+| 16 steps (`farmastock`), Qwen3.8 Flash Next Q2 | steps done (2 h limit) | **16/16** in 85 min | 14/16 |
+| | re-reads from token 0 | **0** | 23 |
+| | tokens read by the engine | **167K** | 267K (with fewer steps) |
+| | early facts recalled at the end | **5/5** | 4/5, one "I don't know" (asked after the limit) |
+| 29 steps (`salepren`), same model | steps done (4 h limit) | 29/29 | 10/29 |
+| | re-reads from token 0 | **1** | 38 |
+| | tokens read / prefill time | **362K / 4,447 s** | 511K / 6,368 s |
+| | memory probes at steps 8, 14, 20 | 17/18 | 5/6 (only step 8 reached) |
+| | hidden tests on the final code | 87/87 ⚠ | 59/87 |
+| 16 steps, DeepSeek V4 Flash Q2 (official ds4, no patches) | steps / re-reads / facts | 16/16 in 61 min / 0 / 7 of 8, one "I don't know" | not run |
+
+Prompt reading (~82 tok/s) and generation (~19 tok/s) were the same with and without the proxy.
+
+**⚠ The 29-step run is not a clean quality result.** Both sides ran with pi's `maxTokens 4096`, and that limit
+includes the model's reasoning. Qwen3.8 often thought for more than 4,096 tokens before acting, so the answer was
+cut before the tool call (`finish_reason: length`): 26 times with the proxy, 8 without. pi stores a cut answer
+without an action and sends the next step, so unanswered requests pile up. With the proxy they reached 13 in a
+row; the model tried to do all of them in one turn, ran out of tokens again, and kept looping. It wrote no code
+from step 2 to step 25, then rewrote the whole package from memory at step 26 (which passes all 87 tests). Without
+the proxy, pi's summaries happened to clear the backlog. The first cut came before the proxy had changed anything,
+and it also happened without the proxy: the cause is the limit, but the proxy keeps the history faithfully and so
+does not break the loop.
+
+What this means in practice:
+- **give reasoning models room**: set the client's max output tokens well above their usual reasoning length
+  (8192 or more for Qwen3.8 with reasoning on);
+- the 16-step runs did not show this loop (with the proxy all 16 steps produced code; 57 of the agent's own tests
+  passed at the end, 40 without the proxy) and are the cleaner comparison;
+- a rerun of the 29-step task with 8192, and a proxy note when the last answer was cut, are planned.
+
+Other findings: once (16-step run with `checkpoint_align_tokens`) a `recall` found the right chunk but the result
+was cut for lack of room in the window, and the model answered "never discussed" — a weak point seen once, not yet
+reproduced. With DeepSeek V4 Flash, ds4's default q8→f16 cache left only ~9 GB of free RAM on a 128 GB machine;
+the run used `DS4_CUDA_NO_Q8_F16_CACHE=1`.
+
+Reports (Italian): [DS4-LONG-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-LONG-RESULT.md) (16 steps, Qwen3.8),
+[DS4-LONG2-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-LONG2-RESULT.md) (29 steps, Qwen3.8),
+[DS4-FLASH-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/DS4-FLASH-RESULT.md) (16 steps, DeepSeek V4 Flash).
 
 `GET /v1/strata/engine` shows what was detected. Measurements: [docs/dev-notes/ENGINES-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/ENGINES-RESULT.md) (Italian).
 
