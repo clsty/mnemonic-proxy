@@ -140,6 +140,40 @@ within the session. Found live and fixed in 0.3.0: in 3 writes out of 140 the mo
 old tool argument into a file (see [What we have not proven](#what-we-have-not-proven)). Report:
 [docs/dev-notes/LIVE020-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/LIVE020-RESULT.md) (Italian).
 
+### Does the model recall on its own?
+
+Recall only helps if the model uses it without being told. We built short scripted tasks where a value the model
+needs at the end exists **only** in an old, masked tool output — not on disk, not reproducible — and the final request
+never says "remember" or "earlier":
+
+- **A** random output of a setup script (build id, p95, skipped migrations); re-running it gives different values;
+- **B** a file read once, then deleted;
+- **C** the old version of an overwritten config, no git, no backup;
+- **D** an error from a test service that is then shut down;
+- **L** a long session: the value appears in turn 0, followed by 12 heavy turns and several segment switches.
+
+Qwen3.8 Flash Next IQ3_XXS on Strata 0.1.40, RTX 4070 Ti 12 GB, proxy 0.3.1 as released (no extra hints):
+
+| client | episodes | right values | via `recall` the model chose to call |
+|---|---|---|---|
+| Claude Code 2.1.284 | A, B, C, D × 2 | 8 / 8 | 8 / 8 |
+| Claude Code 2.1.284 | L: 127K virtual, 3 segment switches | 1 / 1 | yes |
+| pi 0.87.1 | A, B, D | 3 / 3 | 3 / 3 |
+| pi 0.87.1 | L: 231K virtual, 6 segment switches | 1 / 1 | yes (5 keyword searches) |
+
+A control with the full history in the prompt (no masking) was right in every short episode. In the long one it
+re-ran the setup script and wrote the new, wrong values — the proxy run did better. Each episode was checked to have
+none of the true values in the final prompt; one file per configuration was also checked by hand.
+
+Across 18 real sessions (pi, Claude Code, Codex) the need is rare: 5 spontaneous recalls against 108 after a question
+about the past; 30 re-reads of a masked, unchanged file (≈37K tokens); 4 edits out of 505 failed because the model
+misremembered a masked file. When a file can be re-read, the model re-reads it — which is right when it has changed.
+
+Limits: one model, one run of each long session, scaled-down thresholds (32K window) for the long sessions; Cline
+not measured (it cannot resume a session headless without a Cline account). Report:
+[docs/dev-notes/RECALL-NEED-RESULT.md](https://github.com/lastreload/mnemonic-proxy/blob/main/docs/dev-notes/RECALL-NEED-RESULT.md)
+(Italian).
+
 ### Long context on Strata, without the proxy
 
 16 `name=number` facts scattered in a generated Italian story, question at the end, temperature 0, two seeds, from
@@ -161,8 +195,14 @@ Numbers measured by users on their own hardware and shared with permission. Not 
 
 The user reports no compaction pauses during the session. All 8 recalls happened in the last two minutes of the
 session, when the user asked for a summary of the day: during normal work the model never called `recall` on its
-own. We see the same in our own tests: recall is reliable when the model asks, but the model rarely realizes that
-something it needs was masked.
+own. In our tests with Claude Code and pi the model did call `recall` by itself when the value could not be re-read
+from disk ([Does the model recall on its own?](#does-the-model-recall-on-its-own)); with Cline we could not test it.
+
+**Share your numbers.** If you run the proxy on your own hardware, a report helps — especially with clients and models
+we have not tested (Cline, OpenCode, other models). Useful: GPU/RAM, engine and model, client, session length (total
+history and tokens in the last request), restore time, how many `recall` calls and whether the model made them on its
+own. `data/journal.jsonl` holds most of it; check it before sharing, it contains your recall queries. Open an issue
+with the [user report](https://github.com/lastreload/mnemonic-proxy/issues/new?template=user-report.md) template.
 
 ## Requirements
 
@@ -753,6 +793,8 @@ alone and the proxy uses `history_recall` (or `load_tools`) instead.
   original estimate. Questions about visible content: 7/7 either way. Measured without the proxy's recall loop.
 - Facts scattered in a long prompt: 0 wrong out of 160 on Strata, but 9 omissions, all from 64K up (two seeds).
 - Recall search is lexical (FTS5 + structure), not semantic: a paraphrase with no shared words can miss.
+- Unprompted recall is measured with Claude Code and pi on one model; with Cline a user saw recall only when asking
+  about the past, and we could not reproduce that setup.
 - One sequence: the proxy serialises requests and assumes it is the engine's only client; another client on the
   same engine costs re-reads.
 - Numbers come from single runs on one machine and one kind of workload; treat them as indicative.
