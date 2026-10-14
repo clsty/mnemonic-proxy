@@ -23,7 +23,7 @@ import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import compat
+from . import answerfix, compat
 from .core import (LEGACY_RECALL_NAME, RECALL_NAME, Config, Journal, Manager, Store, TokenCounter, content_text,
                    is_human_user)
 from .paging import guard_msg, is_guarded, receipt_contaminated
@@ -117,6 +117,9 @@ class Proxy:
         msgs_c = req.get("messages") or []
         last_user = max((i for i, m in enumerate(msgs_c) if is_human_user(m)), default=None)
         lu_text = content_text(msgs_c[last_user].get("content"))[:300] if last_user is not None else ""
+        if self.cfg.recall_leaf_select:
+            # selettore a sotto-blocco foglia: guida = ultima domanda dell'utente (intera), dichiarata nell'estratto
+            self.mgr.question = content_text(msgs_c[last_user].get("content")) if last_user is not None else ""
         stream_state = {"sent_role": False, "client_calls": 0} if emit else None
         for rnd in range(self.cfg.max_recall_rounds + 2):
             self._live(p, phys, rnd, body)
@@ -124,9 +127,10 @@ class Proxy:
                 stream_state["internal"] = self._internal_names(p, phys)
             try:
                 if emit:
-                    resp = self._round({**body, "messages": phys, "tools": p.tools}, emit, stream_state)
+                    resp = self._round({**answerfix.stream_body(self, p, body, phys, rnd), "messages": phys,
+                                        "tools": p.tools}, emit, stream_state)
                 else:
-                    resp = self.up.chat({**body, "messages": phys, "tools": p.tools})
+                    resp = answerfix.chat(self, p, body, phys, rnd)
             except UpstreamError as e:
                 self.journal.log("upstream_error", conv=p.conv, status=e.status, error=str(e)[:300])
                 return e.status, _err_body(e), {}
@@ -207,8 +211,14 @@ class Proxy:
                             room += give
                             self.journal.log("response_shrunk", conv=p.conv, round=rnd, max_tokens=resp_budget - give,
                                              was=resp_budget)
+                    if need > max(room, 0) and self.cfg.recall_leaf_select:
+                        # selettore foglia: si rifà la scelta dentro lo spazio rimasto (cornice e coda comprese),
+                        # togliendo i blocchi meno pertinenti invece di tagliare il testo a metà
+                        meta.clear()
+                        out = self.mgr.recall(p.conv, a, max_idx=last_user, meta=meta, max_tokens=max(room, 0))
+                        need = self.tc.count(out)
                     if need > max(room, 0):
-                        out = self.mgr.fit_tokens(out, max(room, 0))
+                        out = self.mgr.fit_tokens(out, max(room, 0), exact=self.cfg.recall_leaf_select)
                         self.journal.log("recall_trimmed", conv=p.conv, room=room, round=rnd)
                 new.append({"role": "tool", "tool_call_id": c.get("id"), "content": out})
                 rec = self.journal.log("recall", conv=p.conv, req=rid_req, round=rnd, last_user=lu_text,
@@ -222,6 +232,9 @@ class Proxy:
                     strip_r[-1] += info
             phys += new
             internal += new
+        # controllo post-risposta (K) e pulizia del ragionamento di T/K (answerfix.py)
+        resp = answerfix.guard(self, p, body, phys, resp, emit)
+        answerfix.finish(self, p, resp)
         if internal and p.hs:
             self.mgr.remember_internal(p.conv, p.hs[-1], internal, "".join(strip_c), "".join(strip_r))
         if recall_logs:

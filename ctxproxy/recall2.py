@@ -443,7 +443,12 @@ class Recall2:
         return out, allterms, stats
 
     # ------------------------------------------------------------ entrata
-    def recall(self, conv, args, max_idx=None, meta=None) -> str:
+    def recall(self, conv, args, max_idx=None, meta=None, max_tokens=None) -> str:
+        if getattr(self.cfg, "recall_leaf_select", False):
+            # leaf selector (leafsel.py) before the structured recall, as in Manager.recall; None = not applicable
+            out = self.mgr._leaf_recall(conv, args, max_idx, meta, max_tokens)
+            if out is not None:
+                return out
         max_idx = 10 ** 9 if max_idx is None else max_idx
         mode = str(args.get("mode") or "").strip().lower()
         rid = str(args.get("id") or "").strip().removeprefix("recall:").removeprefix("id=")
@@ -454,9 +459,9 @@ class Recall2:
                             "chiamata"):
             return self.around(conv, rid, mode, args, max_idx, meta)
         if rid:
-            return self.mgr.recall_legacy(conv, {"id": rid, "offset": args.get("offset"), "query": args.get("query")},
-                                          max_idx, meta,
-                                          head_fn=self._id_head)
+            # propaga solo i campi presenti: un offset assente non è offset=0
+            fwd = {"id": rid, **{k: args[k] for k in ("offset", "query") if args.get(k) not in (None, "")}}
+            return self.mgr.recall_legacy(conv, fwd, max_idx, meta, head_fn=self._id_head)
         if path:
             return self.file(conv, path, mode or "timeline", args, max_idx, meta)
         qs = args.get("queries")
