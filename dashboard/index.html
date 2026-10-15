@@ -2,11 +2,11 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<title>Contesto virtuale · monitor</title>
+<title>虚拟上下文 · 实时监控</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
 <style>
-/* Superficie: MONITOR. Densità e lettura a colpo d'occhio, niente hero, un solo accento (ciano). */
+/* 表面：MONITOR。密度与扫读兼顾，无 hero，唯一强调色（青色）。 */
 :root{
   --bg:#0e1013; --pn:#14171c; --pn2:#191d23; --ln:#262b33; --ln2:#1e2229;
   --tx:#dfe3e8; --mu:#8b939e; --dim:#5d6570;
@@ -147,17 +147,17 @@ mark.sg{background:rgba(226,197,65,.12);color:var(--warn);border-radius:2px;padd
 </head>
 <body>
 <div class="top">
-  <h1>Contesto virtuale</h1>
-  <span class="conn" id="conn"><i></i><span id="connTxt">connessione…</span></span>
+  <h1>虚拟上下文</h1>
+  <span class="conn" id="conn"><i></i><span id="connTxt">连接中…</span></span>
   <span class="src" id="src"></span>
-  <label>conversazione <select id="conv"></select></label>
-  <label><input type="checkbox" id="pause"> pausa</label>
+  <label>会话 <select id="conv"></select></label>
+  <label><input type="checkbox" id="pause"> 暂停</label>
   <span class="num dim" id="upd" style="width:70px;text-align:right">—</span>
 </div>
 
 <div class="status">
   <div class="cell" title="Pallino: verde sotto il 60% del limite, giallo 60–80%, arancione oltre l'80%, rosso se il prossimo turno (contesto + riserva per la risposta) non entra.">
-    <div class="lbl">Memoria · contesto fisico</div>
+    <div class="lbl">内存 · 物理上下文</div>
     <div class="mem-head"><span class="mem-dot" id="memDot"></span>
       <span class="big" id="memVal">—</span><span class="mem-state" id="memState"></span></div>
     <div class="gauge" title="riempito = contesto fisico; tratteggio = riserva per la risposta; tacche a 60% e 80%">
@@ -166,42 +166,42 @@ mark.sg{background:rgba(226,197,65,.12);color:var(--warn);border-radius:2px;padd
     <div class="sub" id="memSub" style="margin-top:6px"></div>
   </div>
   <div class="cell">
-    <div class="lbl">Fase</div>
+    <div class="lbl">阶段</div>
     <div class="big" id="phase" style="font-family:var(--sans);font-size:22px">—</div>
     <div class="sub" id="phaseSub"></div>
     <div class="prog"><i id="phaseProg"></i></div>
   </div>
   <div class="cell">
-    <div class="lbl">Velocità (media 2 s)</div>
+    <div class="lbl">速度（2 秒均值）</div>
     <div class="big" id="tps">—<small> tok/s</small></div>
     <div class="sub" id="tpsSub"></div>
   </div>
   <div class="cell">
-    <div class="lbl">Storia virtuale</div>
+    <div class="lbl">虚拟历史</div>
     <div class="big" id="virt">—</div>
     <div class="sub" id="virtSub"></div>
   </div>
   <div class="cell compact">
-    <div class="lbl">Azioni</div>
-    <button disabled title="Segnaposto: la compattazione manuale non è ancora collegata al proxy">Compatta ora</button>
-    <div class="sub" style="margin-top:6px">non ancora disponibile</div>
+    <div class="lbl">操作</div>
+    <button disabled title="占位符：手动压缩尚未与代理接通">立即压缩</button>
+    <div class="sub" style="margin-top:6px">暂不可用</div>
   </div>
 </div>
 <div class="facts" id="facts">
-  <span class="g"><span>ultima richiesta</span><span>riusati <b class="num" id="fReu">—</b></span><span>riletti <b class="num" id="fRd">—</b></span><span>decode <b class="num" id="fDec">—</b></span><span>draft <b class="num" id="fDr">—</b></span></span>
-  <span class="g"><span>sessione</span><span><b class="num" id="fTot">—</b></span><span>riuso <b class="num" id="fTr">—</b></span></span>
-  <span class="g" title="token di cache invalidati dal proxy (blocchi, segmenti, richiamo automatico, strumenti): ultima richiesta, somma e andamento"><span>invalidati</span><span><b class="num" id="fInv">—</b></span><span>somma <b class="num" id="fInvT">—</b></span><svg id="fInvG" width="90" height="16" style="vertical-align:middle"></svg></span>
+  <span class="g"><span>最近请求</span><span>复用 <b class="num" id="fReu">—</b></span><span>重读 <b class="num" id="fRd">—</b></span><span>decode <b class="num" id="fDec">—</b></span><span>draft <b class="num" id="fDr">—</b></span></span>
+  <span class="g"><span>会话</span><span><b class="num" id="fTot">—</b></span><span>复用 <b class="num" id="fTr">—</b></span></span>
+  <span class="g" title="token di cache invalidati dal proxy (blocchi, segmenti, richiamo automatico, strumenti): ultima richiesta, somma e andamento"><span>失效</span><span><b class="num" id="fInv">—</b></span><span>合计 <b class="num" id="fInvT">—</b></span><svg id="fInvG" width="90" height="16" style="vertical-align:middle"></svg></span>
   <span class="g"><span>GPU <b class="num" id="fGpu">—</b></span><span>RAM <b class="num" id="fRam">—</b></span></span>
 </div>
 <div class="err" id="errs"></div>
 
 <main>
 <section>
-  <div class="sh"><h2>Uso del contesto</h2><span class="mu" style="font-size:12px">quanto contesto usa davvero il modello, rispetto a quanta storia esiste</span>
+  <div class="sh"><h2>上下文占用</h2><span class="mu" style="font-size:12px">模型实际占用的上下文，对比现存全部历史</span>
     <span class="opts">
-      <label><input type="radio" name="ax" value="i" checked> per richiesta</label>
-      <label><input type="radio" name="ax" value="t"> per orario</label>
-      <label><input type="checkbox" id="onlyR0"> solo round 0</label>
+      <label><input type="radio" name="ax" value="i" checked> 按请求</label>
+      <label><input type="radio" name="ax" value="t"> 按时段</label>
+      <label><input type="checkbox" id="onlyR0"> 仅第 0 轮</label>
     </span></div>
   <div class="chartrow">
     <div>
@@ -209,39 +209,39 @@ mark.sg{background:rgba(226,197,65,.12);color:var(--warn);border-radius:2px;padd
       <div class="sumline num" id="rsum"></div>
     </div>
     <div class="legend">
-      <div class="it"><span class="sw area"></span><span><b>Contesto fisico</b>: i token che il modello legge davvero a ogni richiesta.</span></div>
-      <div class="it"><span class="sw line"></span><span><b>Storia virtuale</b>: tutta la conversazione che esiste, anche la parte nascosta. <span id="lgEst"></span></span></div>
-      <div class="it"><span class="sw lim"></span><span><b>Limite 131.072</b>: oltre questa linea il contesto fisico non entra nel modello.</span></div>
-      <div class="it"><span class="sw band"></span><span><b>Segmento</b> (seg 0, seg 1…): tratto di conversazione con la stessa cache; a ogni cambio il vecchio tratto viene riassunto in note.</span></div>
-      <div class="it"><span class="sw seg"></span><span><b>Cambio segmento</b>: congelamento, note, sigillo e salvataggio del segmento precedente.</span></div>
-      <div class="it"><span class="sw mask"></span><span><b>Mask −NK</b>: il proxy nasconde vecchie uscite degli strumenti; il contesto fisico scende di N mila token.</span></div>
-      <div class="it"><span class="sw rec"></span><span><b>Recall</b> (punti sotto l'asse): il modello ha richiamato un pezzo nascosto. Punto più grande = più richiami vicini.</span></div>
-      <div class="it"><span class="sw br"></span><span><b>Branch</b>: il client ha ripreso la storia da un punto precedente.</span></div>
-      <div class="it"><span class="sw rd"></span><span><b>Riletti</b> (in basso): token che il modello ha dovuto rileggere; il resto viene dalla cache. Basso è meglio.</span></div>
-      <div class="note">Passa il mouse sul grafico per i dettagli di ogni richiesta.</div>
+      <div class="it"><span class="sw area"></span><span><b>物理上下文</b>：模型每次请求真正读取的 token。</span></div>
+      <div class="it"><span class="sw line"></span><span><b>虚拟历史</b>：现存全部会话，包括被隐藏的部分。 <span id="lgEst"></span></span></div>
+      <div class="it"><span class="sw lim"></span><span><b>上限 131.072</b>：超过此线，物理上下文无法再进入模型。</span></div>
+      <div class="it"><span class="sw band"></span><span><b>分段</b> （seg 0、seg 1…）：共享同一缓存的会话片段；每次切换，旧片段会被总结进笔记。</span></div>
+      <div class="it"><span class="sw seg"></span><span><b>分段切换</b>：冻结、笔记、封存并保存上一分段。</span></div>
+      <div class="it"><span class="sw mask"></span><span><b>遮罩 −NK</b>：代理隐藏旧工具输出，物理上下文因此下降 N 千 token。</span></div>
+      <div class="it"><span class="sw rec"></span><span><b>召回</b> （横轴下方的点）：模型召回了被隐藏的片段。点越大 = 附近召回越多。</span></div>
+      <div class="it"><span class="sw br"></span><span><b>分支</b>：客户端从更早位置继续了历史。</span></div>
+      <div class="it"><span class="sw rd"></span><span><b>重读</b> （下方）：模型不得不重读的 token；其余来自缓存。越低越好。</span></div>
+      <div class="note">将鼠标悬停于图表可查看每次请求的详情。</div>
     </div>
   </div>
 </section>
 
 <section class="lower">
   <div>
-    <div class="sh"><h2>Operazioni del proxy</h2><span class="mu num" id="evcount" style="font-size:12px"></span></div>
+    <div class="sh"><h2>代理操作</h2><span class="mu num" id="evcount" style="font-size:12px"></span></div>
     <div class="chips" id="chips"></div>
     <div class="tbox" id="tbox"><table><colgroup><col style="width:74px"><col style="width:118px"><col></colgroup>
-      <thead><tr><th>ora</th><th>evento</th><th>dettagli (clic per espandere)</th></tr></thead><tbody id="evtb"></tbody></table></div>
+      <thead><tr><th>时间</th><th>事件</th><th>详情（点击展开）</th></tr></thead><tbody id="evtb"></tbody></table></div>
   </div>
   <div>
-    <div class="sh"><h2>Prompt e risposta</h2><span class="mu" id="lrinfo" style="font-size:12px"></span></div>
+    <div class="sh"><h2>提示与回复</h2><span class="mu" id="lrinfo" style="font-size:12px"></span></div>
     <div class="pbox">
-      <div class="pinfo"><span>Risposta</span><span id="respinfo" class="dim"></span>
-        <span class="opts"><button id="copyResp" title="copia la risposta negli appunti">copia</button></span></div>
+      <div class="pinfo"><span>回复</span><span id="respinfo" class="dim"></span>
+        <span class="opts"><button id="copyResp" title="copia la risposta negli appunti">复制</button></span></div>
       <div class="resp" id="resp"><span class="dim">—</span></div>
-      <div class="pinfo"><span>Prompt fisico dell'ultima richiesta</span><span id="phcount" class="num dim"></span>
-        <span class="opts"><label class="mu"><input type="checkbox" id="onlyPh"> solo con segnaposto</label><button id="expand">espandi</button><button id="collapse">comprimi</button></span></div>
-      <div class="plist" id="prompt"><div class="empty">Il proxy non scrive ancora <code>live/last_request.json</code> (opzione <code>live_dump</code>).</div></div>
+      <div class="pinfo"><span>最近请求的物理提示词</span><span id="phcount" class="num dim"></span>
+        <span class="opts"><label class="mu"><input type="checkbox" id="onlyPh"> 仅显示占位符</label><button id="expand">展开</button><button id="collapse">收起</button></span></div>
+      <div class="plist" id="prompt"><div class="empty">代理尚未写入 <code>live/last_request.json</code> （选项 <code>live_dump</code>）。</div></div>
     </div>
-    <div class="sh" style="margin-top:10px"><h2>📌 Punti fermi e 🗑 usa e getta</h2><span class="mu" id="mkinfo" style="font-size:12px"></span></div>
-    <div class="pbox"><div class="plist" id="marks" style="max-height:260px"><div class="empty">nessuna conversazione</div></div></div>
+    <div class="sh" style="margin-top:10px"><h2>📌 固定书签与 🗑 即用即弃</h2><span class="mu" id="mkinfo" style="font-size:12px"></span></div>
+    <div class="pbox"><div class="plist" id="marks" style="max-height:260px"><div class="empty">暂无会话</div></div></div>
   </div>
 </section>
 </main>
@@ -256,8 +256,8 @@ const full = n => n == null ? "—" : nf0.format(n);
 const kfmt = n => n == null ? "—" : Math.abs(n) >= 1000 ? nf1.format(n / 1000) + "K" : nf0.format(n);
 const secs = ms => ms == null ? "—" : nf1.format(ms / 1000) + " s";
 const pct = (a, b) => b ? nf1.format(100 * a / b) + "%" : "—";
-const hhmmss = ts => ts ? new Date(ts * 1000).toLocaleTimeString("it-IT", {hour12: false}) : "—";
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const hhmmss = ts => ts ? new Date(ts * 1000）。toLocaleTimeString("it-IT", {hour12: false}) : "—";
+const esc = s => String(s）。replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 // scritture DOM solo se il valore cambia
 function setText(el, s) { if (el._t !== s) { el._t = s; el.textContent = s; } }
 function setHTML(el, s) { if (el._h !== s) { el._h = s; el.innerHTML = s; } }
@@ -268,14 +268,14 @@ const S = {ev: 0, pt: 0, lr: null, events: [], points: [], conv: null, userConv:
            ax: "i", tps: [], tpsShown: null, dataVer: 0, lastStatus: null};
 
 // ---------- controlli ----------
-document.querySelectorAll("input[name=ax]").forEach(r => r.addEventListener("change", e => { S.ax = e.target.value; S.dataVer++; drawChart(); }));
-$("onlyR0").addEventListener("change", () => { S.dataVer++; drawChart(); });
-$("conv").addEventListener("change", e => { S.conv = e.target.value; S.userConv = true; S.dataVer++; drawChart(); applyConvFilter(); });
+document.querySelectorAll("input[name=ax]"）。forEach(r => r.addEventListener("change", e => { S.ax = e.target.value; S.dataVer++; drawChart(); }));
+$("onlyR0"）。addEventListener("change", () => { S.dataVer++; drawChart(); });
+$("conv"）。addEventListener("change", e => { S.conv = e.target.value; S.userConv = true; S.dataVer++; drawChart(); applyConvFilter(); });
 
 // ---------- polling (mai due richieste sovrapposte) ----------
 async function tick() {
   const t0 = performance.now();
-  if (!$("pause").checked) {
+  if (!$("pause"）。checked) {
     try {
       const r = await fetch(`/api/state?ev=${S.ev}&pt=${S.pt}&lr=${S.lr ?? ""}`, {cache: "no-store"});
       const d = await r.json();
@@ -344,7 +344,7 @@ function renderStatus(d) {
   const fw = phys != null ? Math.min(100, 100 * phys / ctx) : 0;
   setStyle($("gF"), "width", fw.toFixed(1) + "%");
   setStyle($("gR"), "left", fw.toFixed(1) + "%");
-  setStyle($("gR"), "width", Math.max(0, Math.min(100 - fw, 100 * reserve / ctx)).toFixed(1) + "%");
+  setStyle($("gR"), "width", Math.max(0, Math.min(100 - fw, 100 * reserve / ctx)）。toFixed(1) + "%");
   setText($("memSub"), `riserva per la risposta ${kfmt(reserve)} · soglie 60% e 80%`);
   // --- fase ---
   let ph = "inattivo", phSub = "", prog = 0;
@@ -362,11 +362,11 @@ function renderStatus(d) {
       phSub = `da ${el != null ? nf0.format(el) : "—"} s · ${full(g)} / ${full(mx)} token`;
     }
     if (st.queued) phSub += ` · in coda ${st.queued}`;
-  } else if (lastPt) phSub = `ultima richiesta alle ${hhmmss(lastPt.ts)}`;
+  } else if (lastPt) phSub = `最近请求 alle ${hhmmss(lastPt.ts)}`;
   setText($("phase"), ph);
   setText($("phaseSub"), phSub);
-  setStyle($("phaseProg"), "width", (100 * Math.min(1, prog)).toFixed(1) + "%");
-  // --- velocità: media mobile sugli ultimi ~2 s, intera ---
+  setStyle($("phaseProg"), "width", (100 * Math.min(1, prog)）。toFixed(1) + "%");
+  // --- 速度：最近 ~2 s 的移动平均，取整 ---
   const now = performance.now(), gen = busy && !reading;
   const v = st.tokens_per_s ?? lv.tok_s;
   if (gen && v != null && v > 0) S.tps.push([now, v]);
@@ -379,7 +379,7 @@ function renderStatus(d) {
   const vt = lastPt ? lastPt.virtual : null, vp = lastPt ? (lastPt.phys ?? lastPt.phys_est) : null;
   setText($("virt"), kfmt(vt));
   setText($("virtSub"), vt != null && vp ? `${nf1.format(vt / vp)}× il contesto fisico${lastPt.virtual_src === "stima" ? " · stima" : ""}` : "");
-  setText($("lgEst"), lastPt && lastPt.virtual_src === "stima" ? "Qui è stimata dall'archivio del proxy." : "");
+  setText($("lgEst"), lastPt && lastPt.virtual_src === "stima" ? "此处由代理存档估算。" : "");
   // --- fatti secondari ---
   const reqs = m.requests || [], r = reqs[0] && reqs[1] && reqs[1].time > reqs[0].time ? reqs[reqs.length - 1] : (reqs[0] || {});
   setText($("fReu"), r.prompt_tokens ? `${kfmt(r.reused)} (${pct(r.reused || 0, r.prompt_tokens)})` : "—");
@@ -389,7 +389,7 @@ function renderStatus(d) {
   const tt = m.totals || {};
   setText($("fTot"), tt.requests != null ? `${full(tt.requests)} richieste` : "—");
   setText($("fTr"), tt.prompt_tokens ? pct(tt.reused, tt.prompt_tokens) : "—");
-  {   // token di cache invalidati dal proxy (card t_00c5aef6): ultima richiesta + somma + mini grafico
+  {   // token di cache 失效 dal proxy (card t_00c5aef6): 最近请求 + 合计 + mini grafico
     const iv = S.points.filter(p => (!S.conv || p.conv === S.conv) && !p.round && p.inval != null);
     const last = iv.length ? iv[iv.length - 1] : null;
     setText($("fInv"), last ? (last.inval ? `${full(last.inval)} (${last.inval_cause})` : "0") : "—");
@@ -398,13 +398,13 @@ function renderStatus(d) {
     const bars = tail.map((p, k) => {
       const h = Math.round(14 * (p.inval || 0) / mx);
       return h ? `<rect x="${k * 1.5}" y="${15 - h}" width="1" height="${h}" fill="#e0a040"/>` : "";
-    }).join("");
+    }）。join("");
     const g = $("fInvG");
     if (g._t !== bars) { g._t = bars; g.innerHTML = bars; }
   }
-  setText($("fGpu"), hw.gpu_util != null ? `${String(hw.gpu_util).padStart(3, " ")}% · ${nf1.format(hw.gpu_mem_used / 2 ** 30)}/${nf1.format(hw.gpu_mem_total / 2 ** 30)} GiB · ${hw.gpu_temp}°C` : "—");
-  setText($("fRam"), hw.ram_used != null ? `${nf1.format(hw.ram_used / 2 ** 30)}/${nf0.format(hw.ram_total / 2 ** 30)} GiB · CPU ${String(nf0.format(hw.cpu)).padStart(3, " ")}%` : "—");
-  const errs = Object.entries(d.errors || {}).filter(([, x]) => x).map(([k, x]) => `${k}: ${x}`).join(" · ");
+  setText($("fGpu"), hw.gpu_util != null ? `${String(hw.gpu_util）。padStart(3, " ")}% · ${nf1.format(hw.gpu_mem_used / 2 ** 30)}/${nf1.format(hw.gpu_mem_total / 2 ** 30)} GiB · ${hw.gpu_temp}°C` : "—");
+  setText($("fRam"), hw.ram_used != null ? `${nf1.format(hw.ram_used / 2 ** 30)}/${nf0.format(hw.ram_total / 2 ** 30)} GiB · CPU ${String(nf0.format(hw.cpu)）。padStart(3, " ")}%` : "—");
+  const errs = Object.entries(d.errors || {}）。filter(([, x]) => x）。map(([k, x]) => `${k}: ${x}`）。join(" · ");
   setText($("errs"), errs); setCls($("errs"), "show", !!errs);
 }
 
@@ -425,7 +425,7 @@ function niceStep(range, target) {
 function firstAtOrAfter(pts, ts) { let lo = 0, hi = pts.length; while (lo < hi) { const m = (lo + hi) >> 1; if (pts[m].ts < ts) lo = m + 1; else hi = m; } return lo; }
 function chartModel() {
   let pts = S.points.filter(p => !S.conv || p.conv === S.conv);
-  if ($("onlyR0").checked) pts = pts.filter(p => !p.round);
+  if ($("onlyR0"）。checked) pts = pts.filter(p => !p.round);
   const evs = S.events.filter(e => !S.conv || e.conv === S.conv);
   const per = pts.map(() => []);               // eventi associati alla richiesta che li segue
   const segs = [{seg: 0, i0: 0, grp: []}];
@@ -458,7 +458,7 @@ function drawChart() {
   const vmaxRaw = Math.max(W * 1.08, ...pts.map(p => Math.max(p.phys ?? p.phys_est ?? 0, p.virtual ?? 0)));
   const vmax = Math.ceil(vmaxRaw / 50000) * 50000;
   const Y = v => T + M.plotH * (1 - v / vmax);
-  // dominio x stabile: cresce a gradini (richieste: 25; orario: 5 min)
+  // dominio x stabile: cresce a gradini (richieste: 25; 时间rio: 5 min)
   const n = pts.length, t0 = pts[0].ts;
   let X, xTicks = [];
   if (S.ax === "t") {
@@ -513,7 +513,7 @@ function drawChart() {
   // limite
   const yl = Math.round(Y(W)) + .5;
   g.strokeStyle = "#e5584f"; g.lineWidth = 1.6; g.setLineDash([7, 4]); g.beginPath(); g.moveTo(L, yl); g.lineTo(L + PW, yl); g.stroke(); g.setLineDash([]);
-  g.textAlign = "right"; const lt = "limite del modello 131.072"; const ltw = g.measureText(lt).width;
+  g.textAlign = "right"; const lt = "limite del modello 131.072"; const ltw = g.measureText(lt）。width;
   g.fillStyle = "#14171c"; g.fillRect(L + PW - ltw - 12, yl - 18, ltw + 10, 15); g.fillStyle = "#ff7a70"; g.fillText(lt, L + PW - 7, yl - 10);
   // mask: freccia di calo + "−NK" (etichette che non si sovrappongono)
   let lastLab = -1e9;
@@ -544,7 +544,7 @@ function drawChart() {
   for (const [b] of bucket.recall_dropped) { g.beginPath(); g.arc(b * 6, lanes[0][1], 3, 0, 7); g.stroke(); }
   g.fillStyle = "#8b939e";
   for (const [b, c] of bucket.branch) g.fillRect(b * 6 - 1, lanes[1][1] - Math.min(7, 3 + c), 2, 2 * Math.min(7, 3 + c));
-  // riletti per richiesta
+  // 重读 按请求
   const RT = PB + M.axH + 2 * M.laneH + M.gap + 8, RB = RT + M.readH;
   const rmax = Math.max(1000, ...pts.map(p => p.read || 0)); const rs = niceStep(rmax, 2); const rtop = Math.ceil(rmax / rs) * rs;
   g.strokeStyle = "#232830"; g.fillStyle = "#5d6570"; g.textAlign = "right";
@@ -557,12 +557,12 @@ function drawChart() {
   G = {pts, per, segs, X, Y, L, R, T, PB, RT, RB, PW, n, h};
   // riepilogo
   const tr = pts.reduce((a, p) => a + (p.read || 0), 0), tu = pts.reduce((a, p) => a + (p.reused || 0), 0);
-  setText($("rsum"), `${full(n)} richieste · riletti ${kfmt(tr)} · riusati ${kfmt(tu)} (${pct(tu, tu + tr)} dalla cache)`);
+  setText($("rsum"), `${full(n)} richieste · 重读 ${kfmt(tr)} · 复用 ${kfmt(tu)} (${pct(tu, tu + tr)} dalla cache)`);
   if (hoverI != null) drawHover(hoverI);
 }
 // sovrapposizione per il mouse: canvas separato, il grafico non si ridisegna
 let hoverI = null;
-const EVN = {mask: "mask", recall: "recall", recall_dropped: "recall scartato", freeze: "congelamento", notes: "note", seal: "sigillo", save: "salvataggio", switch: "cambio segmento", branch: "branch", new_conversation: "nuova conversazione", autosave: "autosalvataggio", autorestore: "ripristino automatico", autosave_prune: "pulizia salvataggi", strata_state_lost: "stato di Strata perso"};
+const EVN = {mask: "mask", recall: "recall", recall_dropped: "recall scartato", freeze: "congelamento", notes: "note", seal: "sigillo", save: "salvataggio", switch: "cambio segmento", branch: "branch", new_conversation: "nuova 会话", autosave: "autosalvataggio", autorestore: "ripristino automatico", autosave_prune: "pulizia salvataggi", strata_state_lost: "stato di Strata perso"};
 function drawHover(i) {
   const [g, w, h] = sizeCanvas(ov); g.clearRect(0, 0, w, h);
   if (!G || i == null || i >= G.pts.length) { tip.style.display = "none"; return; }
@@ -574,16 +574,16 @@ function drawHover(i) {
   const evs = G.per[i]; const cnt = {};
   let maskTxt = [];
   for (const e of evs) { if (e.event === "mask") maskTxt.push("−" + kfmt(e.tokens_saved)); else cnt[e.event] = (cnt[e.event] || 0) + 1; }
-  const evParts = [...maskTxt.map(t => "mask " + t), ...Object.entries(cnt).map(([k, c]) => (c > 1 ? c + " × " : "") + (EVN[k] || k))];
+  const evParts = [...maskTxt.map(t => "mask " + t), ...Object.entries(cnt）。map(([k, c]) => (c > 1 ? c + " × " : "") + (EVN[k] || k))];
   const ph = p.phys ?? p.phys_est;
   const row = (a, b) => `<div class="r"><span>${a}</span><span class="num">${b}</span></div>`;
   tip.innerHTML = `<div class="h">Richiesta #${G.pts.indexOf(p) + 1} · ${hhmmss(p.ts)} · seg ${seg ? seg.seg : 0} · round ${p.round ?? 0}</div>` +
     row("contesto fisico", `${full(ph)} (${pct(ph || 0, W)})`) +
     row("storia virtuale", `${full(p.virtual)}${p.virtual_src === "stima" ? " stima" : ""}`) +
-    row("riusati dalla cache", full(p.reused)) +
-    row("riletti", `${full(p.read)} · ${secs(p.prompt_ms)}`) +
+    row("复用 dalla cache", full(p.reused)) +
+    row("重读", `${full(p.read)} · ${secs(p.prompt_ms)}`) +
     row("risposta", `${full(p.out)} tok · ${secs(p.ms)} · ${esc(p.finish || "")}`) +
-    `<div class="ev">${evParts.length ? "eventi prima: " + esc(evParts.join(" · ")) : '<span class="dim">nessun evento del proxy</span>'}</div>` +
+    `<div class="ev">${evParts.length ? "eventi prima: " + esc(evParts.join(" · ")) : '<span class="dim">nessun 事件 del proxy</span>'}</div>` +
     (seg && seg.i0 === i && seg.grp.length ? `<div class="ev">${esc(segText(seg))}</div>` : "");
   tip.style.display = "block";
   const tw = 300; tip.style.left = (x + 14 + tw > w ? x - tw - 14 : x + 14) + "px";
@@ -598,14 +598,14 @@ function segText(s) {
   return out.join(" · ");
 }
 ov.addEventListener("mousemove", ev => {
-  if (!G) return; const x = ev.clientX - ov.getBoundingClientRect().left;
-  let lo = 0, hi = G.n - 1;            // X è monotona: ricerca binaria
+  if (!G) return; const x = ev.clientX - ov.getBoundingClientRect(）。left;
+  let lo = 0, hi = G.n - 1;            // X 单调递增：二分查找
   while (lo < hi) { const m = (lo + hi) >> 1; if (G.X(m) < x) lo = m + 1; else hi = m; }
   if (lo > 0 && Math.abs(G.X(lo - 1) - x) < Math.abs(G.X(lo) - x)) lo--;
   if (lo !== hoverI) { hoverI = lo; drawHover(lo); }
 });
 ov.addEventListener("mouseleave", () => { hoverI = null; drawHover(null); });
-new ResizeObserver(() => drawChart()).observe(cw);
+new ResizeObserver(() => drawChart()）。observe(cw);
 
 // ---------- eventi: righe aggiunte in cima, mai ricostruite ----------
 const EVTYPES = ["mask", "recall", "recall_dropped", "freeze", "notes", "seal", "save", "switch", "autosave", "autorestore", "branch", "new_conversation", "errori", "request"];
@@ -616,8 +616,8 @@ for (const t of EVTYPES) {
   c.innerHTML = `<span>${t === "errori" ? "errori" : t}</span><span class="num">0</span>`;
   c.addEventListener("click", () => { evOn[t] = !evOn[t]; setCls(c, "on", evOn[t]); setCls($("evtb"), "fl-off-" + t, !evOn[t]); });
   c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } });
-  chipEls[t] = c; $("chips").appendChild(c);
-  if (!evOn[t]) $("evtb").classList.add("fl-off-" + t);
+  chipEls[t] = c; $("chips"）。appendChild(c);
+  if (!evOn[t]) $("evtb"）。classList.add("fl-off-" + t);
 }
 const isErr = t => /error|miss/.test(t);
 function evDetail(e) {
@@ -625,28 +625,28 @@ function evDetail(e) {
   let p;
   switch (e.event) {
     case "mask": p = [`−${kfmt(e.tokens_saved)}`, `${kfmt(e.est_before)} → ${kfmt(e.est_after)}`, f("count", "messaggi"), f("first_index", "da indice"), f("reread_est", "rilettura stimata")]; break;
-    case "recall": { let q = e.args; try { q = JSON.parse(e.args).query ?? e.args; } catch (_) {} p = [`«${q}»`, f("tokens", "tok"), e.ms != null ? nf1.format(e.ms) + " ms" : null]; break; }
+    case "recall": { let q = e.args; try { q = JSON.parse(e.args）。query ?? e.args; } catch (_) {} p = [`«${q}»`, f("tokens", "tok"), e.ms != null ? nf1.format(e.ms) + " ms" : null]; break; }
     case "recall_dropped": p = [f("count", "scartati"), f("round")]; break;
     case "freeze": p = [f("seg"), `stima ${kfmt(e.est_tokens)}`, f("cut_index", "taglio"), f("response", "riserva")]; break;
     case "notes": p = [f("seg"), f("tokens", "tok"), secs(e.ms), e.timings ? nf1.format(e.timings.predicted_per_second) + " tok/s" : null]; break;
-    case "seal": p = [secs(e.ms), f("cached", "in cache"), e.timings ? `riletti ${full(e.timings.prompt_n)}` : null]; break;
+    case "seal": p = [secs(e.ms), f("cached", "in cache"), e.timings ? `重读 ${full(e.timings.prompt_n)}` : null]; break;
     case "save": p = [f("file"), secs(e.ms), e.result ? `${nf1.format(e.result.n_written / 2 ** 30)} GiB` : null]; break;
     case "switch": p = [f("seg"), f("cut_index", "taglio"), f("notes_msg_tokens", "note tok")]; break;
     case "branch": p = [f("known", "noti"), f("messages", "messaggi")]; break;
     case "new_conversation": p = [f("messages", "messaggi")]; break;
-    case "request": p = [`fisico ${kfmt(e.prompt_tokens)}`, `riletti ${full(e.prompt_read)}`, e.invalidated_suffix_tokens ? `invalidati ${full(e.invalidated_suffix_tokens)} (${e.invalidated_cause})` : null, `round ${e.round ?? 0}`, f("messages", "msg"), `out ${full(e.completion_tokens)}`, secs(e.ms), e.finish]; break;
+    case "request": p = [`fisico ${kfmt(e.prompt_tokens)}`, `重读 ${full(e.prompt_read)}`, e.invalidated_suffix_tokens ? `失效 ${full(e.invalidated_suffix_tokens)} (${e.invalidated_cause})` : null, `round ${e.round ?? 0}`, f("messages", "msg"), `out ${full(e.completion_tokens)}`, secs(e.ms), e.finish]; break;
     case "autosave": p = [f("file"), `${kfmt(e.tokens)} tok`, e.bytes ? `${nf1.format(e.bytes / 2 ** 30)} GiB` : null, secs(e.ms), e.idle_s != null ? `fermo da ${full(e.idle_s)} s` : null]; break;
-    case "autorestore": p = [f("file"), `${kfmt(e.tokens)} tok ripristinati`, `guadagno ${kfmt(e.gain_tokens)}`, secs(e.ms), e.reason === "strata_restart" ? "dopo riavvio/perdita di Strata" : "Strata aveva un'altra conversazione"]; break;
+    case "autorestore": p = [f("file"), `${kfmt(e.tokens)} tok ripristinati`, `guadagno ${kfmt(e.gain_tokens)}`, secs(e.ms), e.reason === "strata_restart" ? "dopo riavvio/perdita di Strata" : "Strata aveva un'altra 会话"]; break;
     case "autosave_prune": p = [f("file"), e.reason === "superseded" ? "superato" : "oltre i limiti", e.bytes ? `${nf1.format(e.bytes / 2 ** 30)} GiB` : null]; break;
     case "strata_state_lost": p = [f("reason", "motivo"), e.tokens ? `${kfmt(e.tokens)} tok persi in Strata` : null]; break;
-    default: { const {ts, event, conv, ...rest} = e; p = [JSON.stringify(rest).slice(0, 400)]; }
+    default: { const {ts, event, conv, ...rest} = e; p = [JSON.stringify(rest）。slice(0, 400)]; }
   }
-  return p.filter(Boolean).join(" · ");
+  return p.filter(Boolean）。join(" · ");
 }
 function addEvents(list) {
   const tb = $("evtb"), box = $("tbox"), frag = document.createDocumentFragment();
   let added = 0;
-  for (let k = list.length - 1; k >= 0; k--) {     // il più recente in cima
+  for (let k = list.length - 1; k >= 0; k--) {     // 最新的排在最前
     const e = list[k], t = e.event, grp = isErr(t) ? "errori" : t;
     counts[grp] = (counts[grp] || 0) + 1;
     if (list.length - k > MAX_ROWS) continue;
@@ -667,48 +667,48 @@ function addEvents(list) {
   const tot = S.events.length;
   setText($("evcount"), `${full(tot)} eventi`);
 }
-$("evtb").addEventListener("click", e => { const tr = e.target.closest("tr"); if (tr) tr.classList.toggle("x"); });
-function applyConvFilter() { for (const tr of $("evtb").children) setCls(tr, "othconv", S.conv && tr.dataset.c && tr.dataset.c !== S.conv); }
+$("evtb"）。addEventListener("click", e => { const tr = e.target.closest("tr"); if (tr) tr.classList.toggle("x"); });
+function applyConvFilter() { for (const tr of $("evtb"）。children) setCls(tr, "othconv", S.conv && tr.dataset.c && tr.dataset.c !== S.conv); }
 
 // ---------- prompt: nodi aggiornati solo se il messaggio cambia ----------
 const PH = /(\[gestore del contesto:[^\]]*?[a-z_]*recall id=[a-z0-9]+[^\]]*\]|\(nota del gestore del contesto:[^)]*\)|\[(?:uscita strumento omessa|ragionamento omesso)[^\]]*?recall:[a-z0-9]+\]|argomenti omessi \([^)]*\) \u2014 recall:[a-z0-9]+|\[[^\]\n]{0,80}omess[ao][^\]\n]{0,120}recall:[a-z0-9]+\])/g;
 const SG = /(\[strata-context:[^\]]*\])/g;
-function hl(s) { return esc(s).replace(PH, '<mark class="ph">$1</mark>').replace(SG, '<mark class="sg">$1</mark>'); }
+function hl(s) { return esc(s）。replace(PH, '<mark class="ph">$1</mark>'）。replace(SG, '<mark class="sg">$1</mark>'); }
 function msgText(m) {
   let out = "";
   if (typeof m.reasoning_content === "string" && m.reasoning_content) out += "‹ragionamento› " + m.reasoning_content + "\n\n";
   const c = m.content;
-  if (typeof c === "string") out += c; else if (Array.isArray(c)) out += c.map(p => p.type === "text" ? p.text : `[${p.type}]`).join("\n");
+  if (typeof c === "string") out += c; else if (Array.isArray(c)) out += c.map(p => p.type === "text" ? p.text : `[${p.type}]`）。join("\n");
   for (const tc of m.tool_calls || []) { const fn = tc.function || {}; out += `\n→ ${fn.name}(${typeof fn.arguments === "string" ? fn.arguments : JSON.stringify(fn.arguments)})`; }
   return out;
 }
-$("expand").onclick = () => document.querySelectorAll("#prompt .msg").forEach(m => m.classList.remove("c"));
-// ---------- copia ed esporta ----------
+$("expand"）。onclick = () => document.querySelectorAll("#prompt .msg"）。forEach(m => m.classList.remove("c"));
+// ---------- 复制 ed esporta ----------
 async function copyText(s, btn) {
   let ok = false;
   try { await navigator.clipboard.writeText(s); ok = true; } catch (e) {
     const ta = document.createElement("textarea"); ta.value = s; ta.style.position = "fixed"; ta.style.opacity = "0";
     document.body.appendChild(ta); ta.select(); try { ok = document.execCommand("copy"); } catch (e2) {} ta.remove();
   }
-  if (btn) { const o = btn.textContent; btn.textContent = ok ? "copiato ✓" : "errore"; setCls(btn, "ok", ok);
+  if (btn) { const o = btn.textContent; btn.textContent = ok ? "复制to ✓" : "errore"; setCls(btn, "ok", ok);
     setTimeout(() => { btn.textContent = o; setCls(btn, "ok", false); }, 1400); }
 }
 function respText(lr) {
-  const r = (lr || {}).response; if (!r) return "";
+  const r = (lr || {}）。response; if (!r) return "";
   return (r.reasoning_content ? "‹ragionamento› " + r.reasoning_content + "\n\n" : "") + (r.content || "") +
-    (r.tool_calls || []).map(tc => `\n→ ${(tc.function || {}).name}(${(tc.function || {}).arguments})`).join("");
+    (r.tool_calls || []）。map(tc => `\n→ ${(tc.function || {}）。name}(${(tc.function || {}）。arguments})`）。join("");
 }
-function stamp(ts) { const d = ts ? new Date(ts * 1000) : new Date(), p = n => String(n).padStart(2, "0");
+function stamp(ts) { const d = ts ? new Date(ts * 1000) : new Date(), p = n => String(n）。padStart(2, "0");
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
 function promptMarkdown(lr) {
   const msgs = lr.messages || [];
   let md = `# Prompt fisico — conv ${lr.conv || "—"} · seg ${lr.seg ?? "—"} · round ${lr.round ?? 0}\n\n` +
-    `- ora: ${new Date((lr.ts || 0) * 1000).toLocaleString()}\n- messaggi: ${msgs.length}\n` +
+    `- 时间: ${new Date((lr.ts || 0) * 1000）。toLocaleString()}\n- messaggi: ${msgs.length}\n` +
     `- token stimati: ${lr.est_tokens ?? "—"}${lr.prompt_tokens ? ` · reali: ${lr.prompt_tokens}` : ""}\n` +
-    (Array.isArray(lr.tools) ? `- strumenti: ${lr.tools.map(t => typeof t === "string" ? t : ((t.function || t).name)).join(", ")}\n` : "") + "\n";
+    (Array.isArray(lr.tools) ? `- strumenti: ${lr.tools.map(t => typeof t === "string" ? t : ((t.function || t）。name)）。join(", ")}\n` : "") + "\n";
   msgs.forEach((m, j) => { md += `## #${j} ${m.role}${m.name ? " (" + m.name + ")" : ""}\n\n~~~~text\n${msgText(m)}\n~~~~\n\n`; });
   const r = respText(lr);
-  if (r) md += `## Risposta${lr.response && lr.response.done === false ? " (in corso)" : ""}\n\n~~~~text\n${r}\n~~~~\n`;
+  if (r) md += `## 回复${lr.response && lr.response.done === false ? " (in corso)" : ""}\n\n~~~~text\n${r}\n~~~~\n`;
   return md;
 }
 function download(name, data, type) {
@@ -716,20 +716,20 @@ function download(name, data, type) {
   a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 function needLive(btn) { if (S.lastLive) return true; if (btn) { const o = btn.textContent; btn.textContent = "nessun prompt"; setTimeout(() => btn.textContent = o, 1400); } return false; }
-$("copyResp").onclick = ev => copyText($("resp").textContent || "", ev.target);
-$("copyAll").onclick = ev => { if (needLive(ev.target)) copyText(promptMarkdown(S.lastLive), ev.target); };
-$("expMd").onclick = ev => { if (needLive(ev.target)) download(`prompt-${S.lastLive.conv || "conv"}-${stamp(S.lastLive.ts)}.md`, promptMarkdown(S.lastLive), "text/markdown;charset=utf-8"); };
-$("expJson").onclick = ev => { if (needLive(ev.target)) download(`prompt-${S.lastLive.conv || "conv"}-${stamp(S.lastLive.ts)}.json`, JSON.stringify(S.lastLive, null, 2), "application/json"); };
+$("copyResp"）。onclick = ev => copyText($("resp"）。textContent || "", ev.target);
+$("copyAll"）。onclick = ev => { if (needLive(ev.target)) copyText(promptMarkdown(S.lastLive), ev.target); };
+$("expMd"）。onclick = ev => { if (needLive(ev.target)) download(`prompt-${S.lastLive.conv || "conv"}-${stamp(S.lastLive.ts)}.md`, promptMarkdown(S.lastLive), "text/markdown;charset=utf-8"); };
+$("expJson"）。onclick = ev => { if (needLive(ev.target)) download(`prompt-${S.lastLive.conv || "conv"}-${stamp(S.lastLive.ts)}.json`, JSON.stringify(S.lastLive, null, 2), "application/json"); };
 function exportHistory(fmt, btn) {
-  const conv = S.conv || (S.lastLive || {}).conv;
-  if (!conv) { const o = btn.textContent; btn.textContent = "nessuna conversazione"; setTimeout(() => btn.textContent = o, 1400); return; }
+  const conv = S.conv || (S.lastLive || {}）。conv;
+  if (!conv) { const o = btn.textContent; btn.textContent = "暂无会话"; setTimeout(() => btn.textContent = o, 1400); return; }
   const a = document.createElement("a"); a.href = `/api/export?conv=${encodeURIComponent(conv)}&fmt=${fmt}`;
   document.body.appendChild(a); a.click(); a.remove();
 }
-$("expHist").onclick = ev => exportHistory("md", ev.target);
-$("expHistJ").onclick = ev => exportHistory("json", ev.target);
-$("collapse").onclick = () => document.querySelectorAll("#prompt .msg").forEach(m => m.classList.add("c"));
-$("onlyPh").addEventListener("change", () => { for (const m of document.querySelectorAll("#prompt .msg")) m.style.display = $("onlyPh").checked && !m._ph ? "none" : ""; });
+$("expHist"）。onclick = ev => exportHistory("md", ev.target);
+$("expHistJ"）。onclick = ev => exportHistory("json", ev.target);
+$("collapse"）。onclick = () => document.querySelectorAll("#prompt .msg"）。forEach(m => m.classList.add("c"));
+$("onlyPh"）。addEventListener("change", () => { for (const m of document.querySelectorAll("#prompt .msg")) m.style.display = $("onlyPh"）。checked && !m._ph ? "none" : ""; });
 function renderPrompt(lr) {
   const msgs = lr.messages || [], box = $("prompt");
   if (box.querySelector(".empty")) box.textContent = "";
@@ -739,15 +739,15 @@ function renderPrompt(lr) {
     const t = msgText(m), key = m.role + "|" + t.length + "|" + t.slice(0, 80) + "|" + t.slice(-80);
     let el = box.children[j];
     if (el && el._key === key) { nph += el._nph; return; }
-    const ph = (t.match(PH) || []).length; nph += ph;
+    const ph = (t.match(PH) || []）。length; nph += ph;
     const n = document.createElement("div");
     n.className = "msg" + (j >= msgs.length - 3 || (ph && t.length < 400) ? "" : " c");
     n._key = key; n._nph = ph; n._ph = ph > 0;
-    n.innerHTML = `<div class="hd"><span class="num dim" style="width:34px">#${j}</span><span class="role">${esc(m.role)}</span><span class="num" style="width:78px">${full(t.length)} car.</span>${ph ? `<mark class="ph">${ph} segnaposto</mark>` : ""}<span class="pv">${esc(t.slice(0, 120).replace(/\s+/g, " "))}</span><button class="cpy" title="copia questo messaggio">copia</button></div><pre>${hl(t)}</pre>`;
+    n.innerHTML = `<div class="hd"><span class="num dim" style="width:34px">#${j}</span><span class="role">${esc(m.role)}</span><span class="num" style="width:78px">${full(t.length)} car.</span>${ph ? `<mark class="ph">${ph} segnaposto</mark>` : ""}<span class="pv">${esc(t.slice(0, 120）。replace(/\s+/g, " "))}</span><button class="cpy" title="copia questo messaggio">复制</button></div><pre>${hl(t)}</pre>`;
     n._txt = t;
     n.firstChild.addEventListener("click", () => n.classList.toggle("c"));
-    n.querySelector(".cpy").addEventListener("click", ev => { ev.stopPropagation(); copyText(n._txt, ev.target); });
-    if ($("onlyPh").checked && !ph) n.style.display = "none";
+    n.querySelector(".cpy"）。addEventListener("click", ev => { ev.stopPropagation(); copyText(n._txt, ev.target); });
+    if ($("onlyPh"）。checked && !ph) n.style.display = "none";
     if (el) box.replaceChild(n, el); else box.appendChild(n);
   });
   while (box.children.length > msgs.length) box.lastChild.remove();
@@ -761,7 +761,7 @@ function renderResponse(d) {
   if (lr && lr.response && (lr.response.content || lr.response.reasoning_content || lr.response.tool_calls)) {
     const r = lr.response;
     txt = (r.reasoning_content ? "‹ragionamento› " + r.reasoning_content + "\n\n" : "") + (r.content || "") +
-          (r.tool_calls || []).map(tc => `\n→ ${(tc.function || {}).name}(${(tc.function || {}).arguments})`).join("");
+          (r.tool_calls || []）。map(tc => `\n→ ${(tc.function || {}）。name}(${(tc.function || {}）。arguments})`）。join("");
     info = `proxy · ${r.done ? "completa" : "in corso"}${r.finish_reason ? " · " + r.finish_reason : ""}${r.completion_tokens != null ? " · " + r.completion_tokens + " tok" : ""}`;
   }
   if (st.busy && st.tail && (!lr || !lr.response || lr.response.done)) { txt = "… " + st.tail; info = `coda live da Strata · ${phaseName(st.phase)}`; }
@@ -787,22 +787,22 @@ async function markAction(body) {
 function renderMarks() {
   const d = MK.data || {}, box = $("marks");
   if (d.error) { setHTML(box, `<div class="empty">${esc(typeof d.error === "string" ? d.error : d.error.message)}</div>`); return; }
-  const pinned = new Map(), dropped = new Set((d.drops || []).map(x => x.index));
-  for (const p of d.pins || []) if (p.active) { if (!pinned.has(p.index)) pinned.set(p.index, []); pinned.get(p.index).push(p); }
-  setText($("mkinfo"), `${(d.pins || []).filter(p => p.active).length} punti fermi · ${kfmt(d.pins_tokens)} / ${kfmt(d.pins_max_tokens)} token${d.over_limit ? " · OLTRE IL TETTO" : ""} · ${dropped.size} usa e getta`);
+  const pinned = new Map(), dropped = new Set((d.drops || []）。map(x => x.index));
+  for (const p of d.pins || []) if (p.active) { if (!pinned.has(p.index)) pinned.set(p.index, []); pinned.get(p.index）。push(p); }
+  setText($("mkinfo"), `${(d.pins || []）。filter(p => p.active）。length} punti fermi · ${kfmt(d.pins_tokens)} / ${kfmt(d.pins_max_tokens)} token${d.over_limit ? " · OLTRE IL TETTO" : ""} · ${dropped.size} usa e getta`);
   let h = "";
-  for (const u of (d.users || []).slice().reverse()) {
+  for (const u of (d.users || []）。slice(）。reverse()) {
     const ps = pinned.get(u.index) || [];
     h += `<div class="msg"><div class="hd"><span class="num dim" style="width:44px">#${u.index}</span>` +
          `<button data-a="pin" data-i="${u.index}" title="fissa il messaggio come punto fermo">📌</button>` +
          `<button data-a="${dropped.has(u.index) ? "undrop" : "drop"}" data-i="${u.index}" title="scambio usa e getta">${dropped.has(u.index) ? "↩︎🗑" : "🗑"}</button>` +
-         `<span class="pv">${esc(u.text.replace(/\s+/g, " ").slice(0, 160))}</span></div>` +
-         ps.map(p => `<div class="mu" style="padding-left:50px">📌 ${esc(p.text.slice(0, 200))} <button data-a="unpin" data-id="${p.id}">togli</button> <button data-a="update_pin" data-id="${p.id}">modifica</button></div>`).join("") +
+         `<span class="pv">${esc(u.text.replace(/\s+/g, " "）。slice(0, 160))}</span></div>` +
+         ps.map(p => `<div class="mu" style="padding-left:50px">📌 ${esc(p.text.slice(0, 200))} <button data-a="unpin" data-id="${p.id}">togli</button> <button data-a="update_pin" data-id="${p.id}">modifica</button></div>`）。join("") +
          `</div>`;
   }
   setHTML(box, h || `<div class="empty">nessun messaggio utente archiviato</div>`);
 }
-$("marks").addEventListener("click", e => {
+$("marks"）。addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   const a = b.dataset.a;
   if (a === "update_pin") { const t = prompt("nuovo testo del punto fermo"); if (t) markAction({action: a, id: +b.dataset.id, text: t}); return; }
