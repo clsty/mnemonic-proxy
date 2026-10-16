@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.3 — 2026-10-16
+
+Conversation identity follows the client's session id, not only the message chain.
+
+- **Session headers are honoured on every API.** `X-Strata-Conversation` still wins, then `X-Session-Id` /
+  `X-Session-Affinity` (opencode, Claude Code), then the body's `prompt_cache_key` (OpenAI clients). The Anthropic
+  entry point read only its own header, so a client that identifies itself with `X-Session-Id` lost the conversation
+  as soon as the content of the context changed.
+- **The hint is bound to a conversation, in both directions.** The first request carrying a hint binds it to the
+  conversation it lands on; from then on that hint *is* that conversation. A compaction (the client replaces the
+  history with a summary, which breaks the hash chain) keeps the same conversation: recall, segments and pins of the
+  compacted part stay reachable, and the engine prefix is reused down to the system prompt. In the other direction, a
+  hint never seen before that lands on a known chain (fork, reopened session) joins that conversation instead of
+  starting a new one.
+- **A shared system prompt no longer merges sessions.** Before, a request whose chain matched only at `h_0` (system +
+  tools, identical for every session with that prompt) was claimed by whichever conversation had registered that hash
+  first — a brand-new session could be silently appended to an unrelated one. Such a request now opens its own
+  conversation. Without a hint the behaviour is exactly as before.
+
 ## 0.3.2 — 2026-10-11
 
 Runs natively on Windows (no WSL), with saved engine state. Available on PyPI.

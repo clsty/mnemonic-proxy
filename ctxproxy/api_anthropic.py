@@ -28,6 +28,8 @@ import re
 import threading
 import uuid
 
+from .core import conv_hint
+
 IMAGE_NOTE = "[immagine omessa: il proxy non inoltra immagini al motore]"
 BILLING = re.compile(r"^\s*x-anthropic-billing-header\s*:", re.I)
 _ID_BAD = re.compile(r"[^A-Za-z0-9_-]")
@@ -376,7 +378,7 @@ def handle(h, proxy, path: str, raw: bytes):
     if path.endswith("/count_tokens"):
         n, _ = proxy.mgr.estimate(req["messages"], req.get("tools"))
         return h._send(200, {"input_tokens": int(n)})
-    hint = h.headers.get("X-Strata-Conversation")
+    hint = conv_hint(h.headers)   # Claude Code manda X-Session-Id: senza di qui ogni compattazione sarebbe una conv nuova
     model = a.get("model")
     if not req.get("stream"):
         try:
