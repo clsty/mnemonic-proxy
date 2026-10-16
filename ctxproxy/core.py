@@ -380,6 +380,39 @@ def chain(messages: list, tools: list | None) -> list[str]:
     return out
 
 
+# Header che i client usano per dire "queste richieste appartengono alla stessa conversazione mia".
+# X-Session-Id / X-Session-Affinity li mandano opencode e Claude Code; valgono quanto un id di sessione.
+HINT_HEADERS = ("X-Strata-Conversation", "X-Session-Id", "X-Session-Affinity")
+
+
+def _header(headers, name: str):
+    """HTTPHeaders è già case-insensitive; un dict semplice no: si normalizza lì."""
+    if headers is None:
+        return None
+    v = headers.get(name)
+    if v is None:
+        low = name.lower()
+        items = headers.items() if hasattr(headers, "items") else ()
+        v = next((val for k, val in items if isinstance(k, str) and k.lower() == low), None)
+    return v
+
+
+def conv_hint(headers, body: dict | None = None) -> str | None:
+    """L'identificatore di conversazione che il client manda, se lo manda.
+
+    Ordine: gli header di sessione, poi `prompt_cache_key` (per OpenAI è la chiave del prefisso: gli agent
+    la mettono uguale all'id della sessione). Un valore così è stabile dentro la sessione e cambia quando il
+    client ne apre una nuova: è ciò che tiene unita la conversazione quando cambia il CONTENUTO del contesto
+    (compattazione, system prompt diverso, strumenti diversi), dove la catena di hash da sola si spezza.
+    """
+    for name in HINT_HEADERS:
+        v = _header(headers, name)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    key = (body or {}).get("prompt_cache_key")
+    return key.strip() if isinstance(key, str) and key.strip() else None
+
+
 def rid_for(idx: int, m: dict) -> str:
     return "r" + H(str(idx), canon(m))[:12]
 
@@ -659,6 +692,7 @@ CREATE TABLE IF NOT EXISTS archive(rid TEXT PRIMARY KEY, conv TEXT, idx INT, rol
     content TEXT, tokens INT, created REAL);
 CREATE INDEX IF NOT EXISTS archive_conv ON archive(conv, idx);
 CREATE TABLE IF NOT EXISTS chains(h TEXT PRIMARY KEY, conv TEXT, idx INT);
+CREATE TABLE IF NOT EXISTS conv_hints(hint TEXT PRIMARY KEY, conv TEXT, created REAL);
 CREATE TABLE IF NOT EXISTS masks(h TEXT PRIMARY KEY, conv TEXT, idx INT, rid TEXT, tokens INT, created REAL);
 CREATE TABLE IF NOT EXISTS segments(conv TEXT, seg INT, cut_idx INT, cut_h TEXT, notes_msg TEXT, kind TEXT,
     created REAL, PRIMARY KEY(conv, seg));
@@ -726,6 +760,26 @@ class Store:
             return None, -1
         best = max(rows, key=lambda r: r[2])
         return best[1], best[2]
+
+    def known_depth(self, conv: str, hs: list[str]) -> int:
+        """Posizione più profonda a cui questa catena risulta già registrata per QUESTA conv (-1 se nessuno).
+        find_conv può aver trovato un hash posseduto da un'altra conv: qui si misura il vero aggancio."""
+        with self.lock:
+            rows = self._in("SELECT idx FROM chains WHERE conv=? AND h IN (?)", hs, (conv,))
+        if not rows:
+            return -1
+        return max(r[0] for r in rows)
+
+    def find_hint(self, hint: str) -> str | None:
+        """La conv a cui l'hint del client era già stato legato (None se è la prima volta che si vede)."""
+        with self.lock:
+            row = self.db.execute("SELECT conv FROM conv_hints WHERE hint=?", (hint,)).fetchone()
+        return row[0] if row else None
+
+    def bind_hint(self, hint: str, conv: str) -> None:
+        """Legamento permanente e idempotente: d'ora in poi questo hint identifica questa conv."""
+        with self.lock:
+            self.db.execute("INSERT OR IGNORE INTO conv_hints VALUES(?,?,?)", (hint, conv, time.time()))
 
     def add_chain(self, conv: str, hs: list[str]) -> None:
         with self.lock:
@@ -1235,14 +1289,29 @@ class Manager:
         events: list[dict] = []
         conv, known = self.store.find_conv(hs)
         if hint:
-            conv = "c-" + H(hint)[:16]
+            # L'hint del client (il suo id di sessione) è l'identità: la catena di hash da sola si spezza quando
+            # cambia il CONTENUTO del contesto (compattazione, system prompt nuovo, strumenti diversi), e una
+            # conversazione spezzata a metà perde recall, segmenti e pin della prima parte. Il legamento è
+            # reciproco: un hint mai visto che però aggancia una catena già nota (fork, sessione riaperta)
+            # finisce sulla stessa conv.
+            bound = self.store.find_hint(hint)
+            if bound:
+                if bound != conv:
+                    conv, known = bound, self.store.known_depth(bound, hs)
+            elif known < 1:
+                # coincide solo h_0 (system + strumenti), che è comune a ogni sessione con questo prompt di
+                # sistema: agganciarla qui unirebbe conversazioni diverse. Meglio una conv nuova.
+                conv, known = None, -1
+            # altrimenti la conv viene dalla catena: l'hint viene legato qui sotto, alla fine
         existed = conv is not None and self.store.has_conv(conv)   # già nell'archivio prima di questa richiesta
         if conv is None:
-            conv = "c" + uuid.uuid4().hex[:12]
-            events.append(self.journal.log("new_conversation", conv=conv, messages=len(msgs)))
+            conv = "c-" + H(hint)[:16] if hint else "c" + uuid.uuid4().hex[:12]
+            events.append(self.journal.log("new_conversation", conv=conv, messages=len(msgs), hint=bool(hint)))
         elif known < len(hs) - 1 and known >= 0 and self.store.has_successor(conv, known):
             # un messaggio in posizione known+1 era già stato visto, ma diverso: modifica/rigenerazione = ramo
             events.append(self.journal.log("branch", conv=conv, known=known, messages=len(msgs)))
+        if hint:
+            self.store.bind_hint(hint, conv)   # anche per una conv appena nata: d'ora in poi questo hint è lei
         self.store.add_chain(conv, hs)
         now = time.time()
         rows = [(rid_for(i, m), conv, i, m.get("role"), m.get("name") or m.get("tool_call_id"),

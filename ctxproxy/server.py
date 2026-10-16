@@ -25,7 +25,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import answerfix, compat
 from .core import (LEGACY_RECALL_NAME, RECALL_NAME, Config, Journal, Manager, Store, TokenCounter, content_text,
-                   is_human_user)
+                   conv_hint, is_human_user)
 from .paging import guard_msg, is_guarded, receipt_contaminated
 from .render import template_kwargs
 from .upstream import Upstream, UpstreamError
@@ -1124,7 +1124,7 @@ def make_handler(proxy: Proxy):
                 req = json.loads(body or b"{}")
             except ValueError:
                 return self._send(400, {"error": {"message": "JSON non valido"}})
-            hint = self.headers.get("X-Strata-Conversation") or req.get("prompt_cache_key")
+            hint = conv_hint(self.headers, req)
             if not req.get("stream"):
                 try:
                     st, resp, hdr = proxy.chat(req, hint)

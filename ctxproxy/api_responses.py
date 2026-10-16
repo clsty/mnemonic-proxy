@@ -26,6 +26,7 @@ import time
 import uuid
 
 from .api_anthropic import IMAGE_NOTE, BadRequest, _err_message
+from .core import conv_hint
 
 CUSTOM_PARAMS = {"type": "object", "properties": {"input": {"type": "string",
                                                             "description": "testo libero passato allo strumento"}},
@@ -390,7 +391,7 @@ def handle(h, proxy, path: str, raw: bytes):
         req, custom = to_chat_request(r)
     except (ValueError, TypeError, KeyError, AttributeError) as e:
         return h._send(400, error_body(400, str(e)))
-    hint = h.headers.get("X-Strata-Conversation") or r.get("prompt_cache_key")
+    hint = conv_hint(h.headers, r)
     model = r.get("model")
     if not req.get("stream"):
         try:
