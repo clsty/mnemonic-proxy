@@ -57,6 +57,29 @@ Three hours and two segment switches into the session, one <code>recall</code> c
 Magenta: the full history of the session. Cyan: what the model actually reads on each request. Dashed lines: the two
 segment switches (≈2 minutes each, written handoff notes). Data from the proxy journal, 5 Oct 2026.
 
+## Benchmark: AgentLongBench with a 32K window
+
+[AgentLongBench](https://github.com/euReKa025/AgentLongBench) (kf-c, tool_response, Count Frequency and Find
+Duplicates), 25 questions per type at 64k (~74K-token history) and 128k (~150K): 100 questions, official scorer.
+Qwen3.8 Flash Next IQ3_XXS on Strata 0.1.40, one RTX 4070 Ti 12 GB, seed 1. Four methods: the full history in an
+81,920 / 163,840-token window, and three ways to fit it into 32,768 tokens — this proxy (0.3.5, commit
+[`b8d4920`](https://github.com/lastreload/mnemonic-proxy/commit/b8d4920)), an LLM summary of at most 2,048 tokens
+written by the same model, and truncation. Preregistered test: proxy vs summary, exact McNemar. With the question
+clarified (one sentence saying which tool output "round N" means; answers and scorer unchanged):
+
+| correct | full window | proxy | summary | truncation |
+|---|---|---|---|---|
+| 64k (/50) | 38 | **41** | 27 | 23 |
+| 128k (/50) | 31 | **45** | 20 | 26 |
+| both (/100) | 69 | **86** | 47 | 49 |
+
+Proxy vs summary: 44 questions right only with the proxy, 5 only with the summary (p = 7.6e-9). With the original,
+ambiguous question every method was near chance (51 / 52 / 56 / 44; answering "0 / no" every time scores 50).
+Limits: one model, one engine, one seed, 100 questions; the clarified run exists because of the first one; end to
+end the proxy took a median 136 s / 286 s per question (64k / 128k) vs 70 s / 102 s for the full window, mostly
+replaying the whole history through the proxy before the question.
+Per-question results, logs, scripts and analysis: [mverde73/mnemonic-proxy-agentlongbench](https://huggingface.co/datasets/mverde73/mnemonic-proxy-agentlongbench).
+
 ## How it works
 
 No summaries written by a model, no vector database required.
